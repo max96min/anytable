@@ -12,7 +12,7 @@ import Spinner from '@/components/ui/Spinner';
 import useSession from '@/hooks/useSession';
 import useCart from '@/hooks/useCart';
 import api from '@/lib/api';
-import { formatPrice } from '@anytable/shared';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import type { PlaceOrderRequest } from '@anytable/shared';
 import { io, type Socket } from 'socket.io-client';
 
@@ -21,6 +21,7 @@ const SharedCartPage: React.FC = () => {
   const navigate = useNavigate();
   const { session, participant } = useSession();
   const { cart, loading, fetchCart, updateItem, removeItem } = useCart();
+  const { format: fp, formatConverted } = useExchangeRate();
   const [placingOrder, setPlacingOrder] = useState(false);
   const [editingUsers, setEditingUsers] = useState<Map<string, string>>(new Map());
   const socketRef = useRef<Socket | null>(null);
@@ -213,7 +214,7 @@ const SharedCartPage: React.FC = () => {
                   {/* Price and quantity */}
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-sm font-bold text-primary-500">
-                      {formatPrice(item.item_total)}
+                      {fp(item.item_total)}
                     </span>
                     <QuantityStepper
                       value={item.quantity}
@@ -235,22 +236,27 @@ const SharedCartPage: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-gray-600">
                 <span>{t('cart.subtotal')}</span>
-                <span>{formatPrice(cart.subtotal)}</span>
+                <span>{fp(cart.subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>{t('cart.service_charge')}</span>
-                <span>{formatPrice(cart.service_charge)}</span>
+                <span>{fp(cart.service_charge)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>{t('cart.tax')}</span>
-                <span>{formatPrice(cart.tax)}</span>
+                <span>{fp(cart.tax)}</span>
               </div>
               <div className="border-t border-gray-100 pt-2 mt-2">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-end">
                   <span className="text-base font-bold text-surface-dark">{t('cart.total')}</span>
-                  <span className="text-lg font-bold text-primary-500">
-                    {formatPrice(cart.grand_total)}
-                  </span>
+                  <div className="text-right">
+                    <span className="text-lg font-bold text-primary-500">
+                      {fp(cart.grand_total)}
+                    </span>
+                    {formatConverted(cart.grand_total) && (
+                      <p className="text-[10px] text-gray-400">≈ {formatConverted(cart.grand_total)}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

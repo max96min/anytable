@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MenuDTO, CategoryDTO, SupportedLanguage } from '@anytable/shared';
-import { formatPrice, SUPPORTED_LANGUAGES } from '@anytable/shared';
+import { SUPPORTED_LANGUAGES } from '@anytable/shared';
 import { getMenus, getCategories, updateMenu, deleteMenu } from '@/lib/admin-api';
+import { useAdminCurrency } from '@/hooks/useAdminCurrency';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -18,6 +19,7 @@ const MenuManagementPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { format: fp } = useAdminCurrency();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -278,7 +280,7 @@ const MenuManagementPage: React.FC = () => {
                           {getMenuName(menu)}
                         </h3>
                         <span className="text-sm font-bold text-primary-500 mt-0.5 block">
-                          {formatPrice(menu.base_price)}
+                          {fp(menu.base_price)}
                         </span>
                       </div>
                       <Badge variant="gray" size="sm" className="shrink-0 ml-2">

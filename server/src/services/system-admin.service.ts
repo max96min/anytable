@@ -234,6 +234,7 @@ export async function createOwnerWithStore(data: {
             tax_rate: 0.1,
             service_charge_rate: 0,
             tax_included: true,
+            currency: 'KRW',
           },
         },
       },

@@ -1,10 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LANGUAGE_FLAGS } from '@anytable/shared';
+import { LANGUAGE_FLAGS, SUPPORTED_CURRENCIES } from '@anytable/shared';
 import type { SupportedLanguage } from '@anytable/shared';
 import useLanguage from '@/hooks/useLanguage';
 import useSession from '@/hooks/useSession';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import Card from '@/components/ui/Card';
 import Icon from '@/components/ui/Icon';
 
@@ -13,6 +14,7 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentLanguage, changeLanguage, supportedLanguages, languageLabels } = useLanguage();
   const { session, participant, store } = useSession();
+  const { storeCurrency, displayCurrency, setDisplayCurrency } = useExchangeRate();
 
   return (
     <div className="min-h-screen bg-surface-light pb-28">
@@ -77,6 +79,27 @@ const ProfilePage: React.FC = () => {
               );
             })}
           </Card>
+        </div>
+
+        {/* Display currency */}
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700 mb-1 px-1">
+            {t('filter.display_currency')}
+          </h2>
+          <p className="text-xs text-gray-500 mb-3 px-1">
+            {t('filter.display_currency_desc')}
+          </p>
+          <select
+            value={displayCurrency}
+            onChange={(e) => setDisplayCurrency(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          >
+            {SUPPORTED_CURRENCIES.filter((c) => c.code !== storeCurrency).map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Allergen preferences link */}

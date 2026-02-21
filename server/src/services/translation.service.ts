@@ -87,3 +87,41 @@ Return ONLY a valid JSON object with the same keys, translated to ${toName}. No 
     cultural_note: parsed.cultural_note || undefined,
   };
 }
+
+export async function generateCulturalNote(
+  menuName: string,
+  menuDescription: string | undefined,
+  targetLang: string,
+): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is not configured');
+  }
+
+  const langName = LANGUAGE_NAMES[targetLang] || targetLang;
+
+  const prompt = `You are a knowledgeable food culture expert writing for a restaurant menu.
+Write a brief cultural note (2-3 sentences) in ${langName} about the following dish.
+Explain its origin, cultural significance, how it's traditionally eaten, or any interesting facts that would help a ${langName}-speaking customer appreciate the dish.
+
+Dish name: ${menuName}
+${menuDescription ? `Description: ${menuDescription}` : ''}
+
+Write ONLY the cultural note text in ${langName}. No quotes, no labels, no markdown.`;
+
+  const openai = new OpenAI({ apiKey });
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.7,
+    max_tokens: 300,
+  });
+
+  const content = response.choices[0]?.message?.content?.trim();
+  if (!content) {
+    throw new Error('No cultural note returned from AI');
+  }
+
+  return content;
+}

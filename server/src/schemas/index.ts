@@ -224,6 +224,7 @@ export const updateStoreSchema = z.object({
       tax_rate: z.number().min(0).max(1).optional(),
       service_charge_rate: z.number().min(0).max(1).optional(),
       tax_included: z.boolean().optional(),
+      currency: z.string().min(3).max(3).optional(),
     }).optional(),
   }),
 });

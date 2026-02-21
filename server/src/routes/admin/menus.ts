@@ -176,6 +176,14 @@ router.post(
         to_lang,
       );
 
+      // Save translated result to DB
+      locales[to_lang] = {
+        name: translated.name,
+        description: translated.description,
+        cultural_note: translated.cultural_note,
+      };
+      await menuService.update(req.params.id, req.store_id!, { locales });
+
       res.status(200).json({
         success: true,
         data: translated,
@@ -184,6 +192,131 @@ router.post(
       console.error('[Auto Translate]', err);
       const message =
         err instanceof Error ? err.message : 'Translation failed';
+      res.status(502).json({ success: false, error: message });
+    }
+  },
+);
+
+// POST /api/admin/menus/:id/bulk-translate
+router.post(
+  '/:id/bulk-translate',
+  async (req: Request, res: Response, _next: NextFunction) => {
+    try {
+      const { from_lang, to_langs } = req.body as { from_lang?: string; to_langs?: string[] };
+      if (!from_lang || !Array.isArray(to_langs) || to_langs.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'from_lang and to_langs[] are required',
+        });
+      }
+
+      const menu = await menuService.getByIdForAdmin(req.params.id, req.store_id!);
+      const locales = menu.locales as Record<string, { name?: string; description?: string; cultural_note?: string }>;
+      const sourceLocale = locales[from_lang];
+
+      if (!sourceLocale?.name) {
+        return res.status(400).json({
+          success: false,
+          error: `No translation found for source language: ${from_lang}`,
+        });
+      }
+
+      const source = {
+        name: sourceLocale.name,
+        description: sourceLocale.description,
+        cultural_note: sourceLocale.cultural_note,
+      };
+
+      const results = await Promise.allSettled(
+        to_langs
+          .filter((lang) => lang !== from_lang)
+          .map(async (toLang) => {
+            const translated = await translationService.translateMenu(source, from_lang, toLang);
+            return { lang: toLang, data: translated };
+          }),
+      );
+
+      const targetLangs = to_langs.filter((lang) => lang !== from_lang);
+      const translations: Record<string, { name: string; description?: string; cultural_note?: string }> = {};
+      const errors: Record<string, string> = {};
+
+      results.forEach((result, idx) => {
+        if (result.status === 'fulfilled') {
+          translations[result.value.lang] = result.value.data;
+        } else {
+          const reason = result.reason instanceof Error ? result.reason.message : 'Translation failed';
+          errors[targetLangs[idx]] = reason;
+        }
+      });
+
+      // Save all successful translations to DB
+      if (Object.keys(translations).length > 0) {
+        for (const [lang, data] of Object.entries(translations)) {
+          locales[lang] = {
+            name: data.name,
+            description: data.description,
+            cultural_note: data.cultural_note,
+          };
+        }
+        await menuService.update(req.params.id, req.store_id!, { locales });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          translations,
+          errors,
+        },
+      });
+    } catch (err: unknown) {
+      console.error('[Bulk Translate]', err);
+      const message =
+        err instanceof Error ? err.message : 'Bulk translation failed';
+      res.status(502).json({ success: false, error: message });
+    }
+  },
+);
+
+// POST /api/admin/menus/:id/generate-cultural-note
+router.post(
+  '/:id/generate-cultural-note',
+  async (req: Request, res: Response, _next: NextFunction) => {
+    try {
+      const { language } = req.body;
+      if (!language) {
+        return res.status(400).json({
+          success: false,
+          error: 'language is required',
+        });
+      }
+
+      const menu = await menuService.getByIdForAdmin(req.params.id, req.store_id!);
+      const locales = menu.locales as Record<string, { name?: string; description?: string }>;
+
+      // Use the target language's name if available, otherwise fall back to any available name
+      const locale = locales[language] || locales['en'] || Object.values(locales)[0];
+      const menuName = locale?.name;
+      if (!menuName) {
+        return res.status(400).json({
+          success: false,
+          error: 'Menu has no name to generate cultural note from',
+        });
+      }
+
+      const culturalNote = await translationService.generateCulturalNote(
+        menuName,
+        locale?.description,
+        language,
+      );
+
+      res.status(200).json({
+        success: true,
+        data: { cultural_note: culturalNote },
+      });
+    } catch (err: unknown) {
+      console.error('[Generate Cultural Note]', err);
+      const message =
+        err instanceof Error ? err.message : 'Cultural note generation failed';
       res.status(502).json({ success: false, error: message });
     }
   },

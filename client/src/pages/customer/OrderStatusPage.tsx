@@ -9,7 +9,8 @@ import Spinner from '@/components/ui/Spinner';
 import useSession from '@/hooks/useSession';
 import useOrders from '@/hooks/useOrders';
 import useLanguage from '@/hooks/useLanguage';
-import { formatPrice, LANGUAGE_LABELS, SUPPORTED_LANGUAGES, ORDER_STATUS_FLOW } from '@anytable/shared';
+import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES, ORDER_STATUS_FLOW } from '@anytable/shared';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import type { OrderDTO, OrderStatus, SupportedLanguage } from '@anytable/shared';
 
 const STATUS_ICONS: Record<string, string> = {
@@ -50,6 +51,7 @@ const OrderStatusPage: React.FC = () => {
   const { session } = useSession();
   const { orders, isLoading } = useOrders(session?.id);
   const { currentLanguage, changeLanguage } = useLanguage();
+  const { format: fp } = useExchangeRate();
 
   const [activeRound, setActiveRound] = useState<number>(1);
   const [elapsed, setElapsed] = useState('0m');
@@ -304,7 +306,7 @@ const OrderStatusPage: React.FC = () => {
               <div className="flex justify-between pt-2 mt-2 border-t border-gray-100">
                 <span className="text-sm text-gray-500">{t('order.total')}</span>
                 <span className="text-sm font-bold text-surface-dark">
-                  {formatPrice(order.grand_total)}
+                  {fp(order.grand_total)}
                 </span>
               </div>
             </Card>

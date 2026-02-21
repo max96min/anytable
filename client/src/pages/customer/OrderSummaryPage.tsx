@@ -8,7 +8,7 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import useSession from '@/hooks/useSession';
 import useOrders from '@/hooks/useOrders';
-import { formatPrice } from '@anytable/shared';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import type { OrderDTO } from '@anytable/shared';
 
 function formatDuration(startTime: string): string {
@@ -26,6 +26,7 @@ const OrderSummaryPage: React.FC = () => {
   const navigate = useNavigate();
   const { session, leaveSession } = useSession();
   const { orders, isLoading } = useOrders(session?.id);
+  const { format: fp } = useExchangeRate();
   const [duration, setDuration] = useState('0m');
 
   useEffect(() => {
@@ -123,7 +124,7 @@ const OrderSummaryPage: React.FC = () => {
                         </span>
                       </div>
                       <span className="text-sm text-gray-600 shrink-0 ml-2">
-                        {formatPrice(item.item_total)}
+                        {fp(item.item_total)}
                       </span>
                     </div>
                   )),
@@ -135,7 +136,7 @@ const OrderSummaryPage: React.FC = () => {
                   {t('order.total')}
                 </span>
                 <span className="text-sm font-semibold text-surface-dark">
-                  {formatPrice(roundTotal)}
+                  {fp(roundTotal)}
                 </span>
               </div>
             </Card>
@@ -149,7 +150,7 @@ const OrderSummaryPage: React.FC = () => {
               {t('summary.grand_total')}
             </span>
             <span className="text-2xl font-bold text-primary-500">
-              {formatPrice(grandTotal)}
+              {fp(grandTotal)}
             </span>
           </div>
         </Card>

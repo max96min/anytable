@@ -17,23 +17,73 @@ function getAccessToken(): string | null {
   return localStorage.getItem('admin_access_token');
 }
 
+function getRefreshToken(): string | null {
+  return localStorage.getItem('admin_refresh_token');
+}
+
+let isRefreshing = false;
+let refreshPromise: Promise<void> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
+
+  if (isRefreshing && refreshPromise) {
+    await refreshPromise;
+    return !!getAccessToken();
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!res.ok) throw new Error('Refresh failed');
+      const json: ApiResponse<{ access_token: string; refresh_token: string; owner: unknown }> = await res.json();
+      if (!json.success || !json.data) throw new Error('Refresh failed');
+      localStorage.setItem('admin_access_token', json.data.access_token);
+      localStorage.setItem('admin_refresh_token', json.data.refresh_token);
+      localStorage.setItem('admin_owner', JSON.stringify(json.data.owner));
+    } catch {
+      localStorage.removeItem('admin_access_token');
+      localStorage.removeItem('admin_refresh_token');
+      localStorage.removeItem('admin_owner');
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+  await refreshPromise;
+  return !!getAccessToken();
+}
+
 async function adminFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = getAccessToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
+  const doFetch = (token: string | null) => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return fetch(`${BASE}${path}`, { ...options, headers });
   };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers,
-  });
+  let res = await doFetch(getAccessToken());
+
+  // Auto-refresh on 401
+  if (res.status === 401) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      res = await doFetch(getAccessToken());
+    }
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
@@ -322,6 +372,36 @@ export async function autoTranslateMenu(
     method: 'POST',
     body: JSON.stringify({ from_lang: fromLang, to_lang: toLang }),
   });
+}
+
+export interface BulkTranslateResult {
+  translations: Record<string, AutoTranslateResult>;
+  errors: Record<string, string>;
+}
+
+export async function bulkTranslateMenu(
+  menuId: string,
+  fromLang: string,
+  toLangs: string[],
+): Promise<BulkTranslateResult> {
+  return adminFetch<BulkTranslateResult>(`/menus/${menuId}/bulk-translate`, {
+    method: 'POST',
+    body: JSON.stringify({ from_lang: fromLang, to_langs: toLangs }),
+  });
+}
+
+export async function generateCulturalNote(
+  menuId: string,
+  language: string,
+): Promise<string> {
+  const data = await adminFetch<{ cultural_note: string }>(
+    `/menus/${menuId}/generate-cultural-note`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ language }),
+    },
+  );
+  return data.cultural_note;
 }
 
 // ============ Images ============

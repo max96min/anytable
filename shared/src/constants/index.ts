@@ -49,9 +49,38 @@ export const AVATAR_COLORS = [
   '#ef4444', '#f59e0b', '#06b6d4', '#ec4899',
 ];
 
-export const formatPrice = (cents: number, currency = 'USD'): string => {
-  return new Intl.NumberFormat('en-US', {
+// Currencies with 0 minor units (no cents/subunits)
+const ZERO_DECIMAL_CURRENCIES = new Set(['KRW', 'JPY', 'VND', 'CLP', 'ISK', 'UGX', 'RWF']);
+
+const CURRENCY_LOCALES: Record<string, string> = {
+  USD: 'en-US', EUR: 'de-DE', GBP: 'en-GB',
+  KRW: 'ko-KR', JPY: 'ja-JP', CNY: 'zh-CN',
+  THB: 'th-TH', VND: 'vi-VN', TWD: 'zh-TW',
+};
+
+export const SUPPORTED_CURRENCIES = [
+  { code: 'KRW', label: '₩ KRW (Korean Won)' },
+  { code: 'USD', label: '$ USD (US Dollar)' },
+  { code: 'JPY', label: '¥ JPY (Japanese Yen)' },
+  { code: 'CNY', label: '¥ CNY (Chinese Yuan)' },
+  { code: 'EUR', label: '€ EUR (Euro)' },
+  { code: 'GBP', label: '£ GBP (British Pound)' },
+  { code: 'THB', label: '฿ THB (Thai Baht)' },
+  { code: 'TWD', label: 'NT$ TWD (Taiwan Dollar)' },
+  { code: 'VND', label: '₫ VND (Vietnamese Dong)' },
+] as const;
+
+export const LANGUAGE_CURRENCY_MAP: Record<string, string> = {
+  en: 'USD', ko: 'KRW', ja: 'JPY', zh: 'CNY', es: 'EUR',
+};
+
+export const formatPrice = (amount: number, currency = 'KRW'): string => {
+  const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.has(currency);
+  const value = isZeroDecimal ? amount : amount / 100;
+  const locale = CURRENCY_LOCALES[currency] || 'en-US';
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
-  }).format(cents / 100);
+    maximumFractionDigits: isZeroDecimal ? 0 : 2,
+  }).format(value);
 };

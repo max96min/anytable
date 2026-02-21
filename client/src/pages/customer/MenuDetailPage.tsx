@@ -13,7 +13,7 @@ import useSession from '@/hooks/useSession';
 import useCart from '@/hooks/useCart';
 import { useMenuDetail } from '@/hooks/useMenu';
 import useLanguage from '@/hooks/useLanguage';
-import { formatPrice } from '@anytable/shared';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import type { SelectedOption, MenuOptionGroup } from '@anytable/shared';
 
 const SPICY_OPTIONS = ['mild', 'medium', 'hot'] as const;
@@ -26,6 +26,7 @@ const MenuDetailPage: React.FC = () => {
   const { addItem } = useCart();
   const { currentLanguage } = useLanguage();
   const { data: menu, isLoading, isError } = useMenuDetail(store?.id, menuId);
+  const { format: fp, formatConverted } = useExchangeRate();
 
   const [quantity, setQuantity] = useState(1);
   const [spicyLevel, setSpicyLevel] = useState<typeof SPICY_OPTIONS[number]>('medium');
@@ -204,9 +205,14 @@ const MenuDetailPage: React.FC = () => {
                 </p>
               )}
             </div>
-            <span className="text-xl font-bold text-primary-500 shrink-0 ml-3">
-              {formatPrice(menu.base_price)}
-            </span>
+            <div className="shrink-0 ml-3 text-right">
+              <span className="text-xl font-bold text-primary-500">
+                {fp(menu.base_price)}
+              </span>
+              {formatConverted(menu.base_price) && (
+                <p className="text-[10px] text-gray-400">≈{formatConverted(menu.base_price)}</p>
+              )}
+            </div>
           </div>
 
           {locale.description && (
@@ -235,13 +241,13 @@ const MenuDetailPage: React.FC = () => {
               {menu.spiciness_level > 0 && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">{t('menu.spiciness')}</span>
-                  <RatingDots level={menu.spiciness_level} maxLevel={3} color="#ef4444" />
+                  <RatingDots level={menu.spiciness_level} maxLevel={3} emoji="🌶️" />
                 </div>
               )}
               {menu.challenge_level > 0 && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">{t('menu.challenge')}</span>
-                  <RatingDots level={menu.challenge_level} maxLevel={3} color="#e68119" />
+                  <RatingDots level={menu.challenge_level} maxLevel={3} emoji="💪" />
                 </div>
               )}
             </div>
@@ -334,7 +340,7 @@ const MenuDetailPage: React.FC = () => {
                       </div>
                       {val.price_delta > 0 && (
                         <span className="text-sm text-gray-500">
-                          +{formatPrice(val.price_delta)}
+                          +{fp(val.price_delta)}
                         </span>
                       )}
                     </button>
@@ -391,7 +397,7 @@ const MenuDetailPage: React.FC = () => {
           >
             {menu.is_sold_out
               ? t('menu.sold_out')
-              : `${t('menu.add_to_shared_cart')} - ${formatPrice(totalPrice)}`}
+              : `${t('menu.add_to_shared_cart')} - ${fp(totalPrice)}`}
           </Button>
         </div>
       </div>

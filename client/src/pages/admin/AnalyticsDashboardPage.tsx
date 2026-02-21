@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { formatPrice, LANGUAGE_LABELS } from '@anytable/shared';
+import { LANGUAGE_LABELS } from '@anytable/shared';
 import { getAnalytics } from '@/lib/admin-api';
+import { useAdminCurrency } from '@/hooks/useAdminCurrency';
 import Card from '@/components/ui/Card';
 import Icon from '@/components/ui/Icon';
 import Spinner from '@/components/ui/Spinner';
@@ -42,6 +43,7 @@ const StatCard: React.FC<StatCardProps> = ({
 
 const AnalyticsDashboardPage: React.FC = () => {
   const { t } = useTranslation();
+  const { format: fp } = useAdminCurrency();
 
   const { data: analytics, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin-analytics'],
@@ -113,7 +115,7 @@ const AnalyticsDashboardPage: React.FC = () => {
               <StatCard
                 icon="payments"
                 label={t('admin.todays_revenue')}
-                value={formatPrice(stats.today_revenue)}
+                value={fp(stats.today_revenue)}
                 iconBg="bg-green-50"
                 iconColor="text-green-600"
               />
@@ -127,7 +129,7 @@ const AnalyticsDashboardPage: React.FC = () => {
               <StatCard
                 icon="trending_up"
                 label={t('admin.avg_order_value')}
-                value={formatPrice(stats.avg_order_value)}
+                value={fp(stats.avg_order_value)}
                 iconBg="bg-purple-50"
                 iconColor="text-purple-600"
               />

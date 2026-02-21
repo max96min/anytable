@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { io, type Socket } from 'socket.io-client';
 import type { OrderDTO, OrderStatus, SocketEvents } from '@anytable/shared';
-import { formatPrice } from '@anytable/shared';
 import { getOrders, updateOrderStatus } from '@/lib/admin-api';
+import { useAdminCurrency } from '@/hooks/useAdminCurrency';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
@@ -30,6 +30,7 @@ function elapsedMinutes(placedAt: string): number {
 const OrderDashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const { owner, accessToken } = useAdminAuth();
+  const { format: fp } = useAdminCurrency();
 
   const elapsedString = (placedAt: string): string => {
     const diff = Date.now() - new Date(placedAt).getTime();
@@ -477,7 +478,7 @@ const OrderDashboardPage: React.FC = () => {
                           )}
                         </div>
                         <span className="text-xs text-gray-400 shrink-0 ml-2">
-                          {formatPrice(item.item_total)}
+                          {fp(item.item_total)}
                         </span>
                       </div>
                     ))}
@@ -490,7 +491,7 @@ const OrderDashboardPage: React.FC = () => {
                         #{order.id.slice(-3).toUpperCase()}
                       </span>
                       <span className="text-sm font-semibold text-surface-dark">
-                        {formatPrice(order.grand_total)}
+                        {fp(order.grand_total)}
                       </span>
                     </div>
                     {getActionButton(order)}

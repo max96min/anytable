@@ -10,7 +10,7 @@ import Spinner from '@/components/ui/Spinner';
 import useSession from '@/hooks/useSession';
 import { useMenu } from '@/hooks/useMenu';
 import useLanguage from '@/hooks/useLanguage';
-import { formatPrice } from '@anytable/shared';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 
 const MenuBrowsingPage: React.FC = () => {
   const { t } = useTranslation();
@@ -18,6 +18,7 @@ const MenuBrowsingPage: React.FC = () => {
   const { session, store } = useSession();
   const { currentLanguage } = useLanguage();
   const { categories, isLoading, isError, filterMenu, refetch } = useMenu(store?.id);
+  const { format: fp, formatConverted } = useExchangeRate();
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -216,19 +217,43 @@ const MenuBrowsingPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      {menu.dietary_tags.map((tag) => {
+                        const variantMap: Record<string, 'green' | 'blue' | 'orange'> = {
+                          vegan: 'green', vegetarian: 'green',
+                          halal: 'blue', kosher: 'blue',
+                          pork_free: 'orange', gluten_free: 'orange',
+                        };
+                        const labelMap: Record<string, string> = {
+                          vegan: 'menu.vegan_option', vegetarian: 'menu.vegetarian',
+                          halal: 'menu.halal', kosher: 'menu.kosher',
+                          pork_free: 'menu.pork_free', gluten_free: 'menu.gluten_free',
+                        };
+                        return (
+                          <Badge key={tag} variant={variantMap[tag] || 'green'} size="sm">
+                            {t(labelMap[tag] || tag)}
+                          </Badge>
+                        );
+                      })}
                       {menu.spiciness_level > 0 && (
-                        <RatingDots level={menu.spiciness_level} maxLevel={3} color="#ef4444" />
+                        <RatingDots level={menu.spiciness_level} maxLevel={3} emoji="🌶️" />
                       )}
                       {menu.challenge_level > 0 && (
-                        <RatingDots level={menu.challenge_level} maxLevel={3} color="#e68119" />
+                        <RatingDots level={menu.challenge_level} maxLevel={3} emoji="💪" />
                       )}
                     </div>
 
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm font-bold text-primary-500">
-                        {formatPrice(menu.base_price)}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-primary-500">
+                          {fp(menu.base_price)}
+                        </span>
+                        {formatConverted(menu.base_price) && (
+                          <span className="text-[10px] text-gray-400 -mt-0.5">
+                            ≈ {formatConverted(menu.base_price)}
+                          </span>
+                        )}
+                      </div>
                       {!menu.is_sold_out && (
                         <button
                           onClick={(e) => {

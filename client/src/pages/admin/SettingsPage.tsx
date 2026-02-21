@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, LANGUAGE_FLAGS } from '@anytable/shared';
+import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, LANGUAGE_FLAGS, SUPPORTED_CURRENCIES } from '@anytable/shared';
 import type { SupportedLanguage, StoreDTO, StoreSettings } from '@anytable/shared';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { getStore, updateStore, uploadMenuImage, generateMenuImage } from '@/lib/admin-api';
@@ -471,6 +471,25 @@ const SettingsPage: React.FC = () => {
               {t('admin.settings.billing_settings')}
             </h2>
             <div className="flex flex-col gap-4">
+              {/* Currency */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">
+                  {t('admin.settings.currency')}
+                </label>
+                <p className="text-xs text-gray-500">{t('admin.settings.currency_desc')}</p>
+                <select
+                  value={form?.settings.currency ?? 'KRW'}
+                  onChange={(e) => updateSetting('currency', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Tax Rate */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-gray-700">

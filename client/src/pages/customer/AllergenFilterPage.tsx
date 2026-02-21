@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+
 import Card from '@/components/ui/Card';
 import Icon from '@/components/ui/Icon';
 import Button from '@/components/ui/Button';
 import Toggle from '@/components/ui/Toggle';
+
 
 const STORAGE_KEY = 'anytable_allergen_prefs';
 

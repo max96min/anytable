@@ -45,6 +45,7 @@ export interface StoreSettings {
   tax_rate: number;
   service_charge_rate: number;
   tax_included: boolean;
+  currency: string;
 }
 
 export interface StoreDTO {

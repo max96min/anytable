@@ -28,6 +28,7 @@ import publicTableSessionRoutes from './routes/public/sessions.js';
 import publicMenuRoutes from './routes/public/menu.js';
 import publicCartRoutes from './routes/public/cart.js';
 import publicOrderRoutes from './routes/public/orders.js';
+import exchangeRatesRoutes from './routes/exchange-rates.js';
 
 export function createApp() {
   const app = express();
@@ -143,6 +144,12 @@ export function createApp() {
 
   // GET /api/system/stats
   app.use('/api/system/stats', systemRateLimit, systemStatsRoutes);
+
+  // ---------------------------------------------------------------------------
+  // Utility routes
+  // ---------------------------------------------------------------------------
+  // GET /api/exchange-rates?from=KRW
+  app.use('/api/exchange-rates', publicRateLimit, exchangeRatesRoutes);
 
   // Global error handler (must be after routes)
   app.use(errorHandler);

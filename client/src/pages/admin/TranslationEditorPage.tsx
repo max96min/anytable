@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MenuLocale, SupportedLanguage } from '@anytable/shared';
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS } from '@anytable/shared';
-import { getMenu, getMenuTranslations, saveMenuTranslation, autoTranslateMenu } from '@/lib/admin-api';
+import { getMenu, getMenuTranslations, saveMenuTranslation, autoTranslateMenu, bulkTranslateMenu, generateCulturalNote } from '@/lib/admin-api';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/ui/Icon';
 import Spinner from '@/components/ui/Spinner';
@@ -81,7 +81,7 @@ const TranslationEditorPage: React.FC = () => {
     },
   });
 
-  // Auto-translate mutation
+  // Auto-translate mutation (translates + saves on server)
   const translateMutation = useMutation({
     mutationFn: ({ fromLang, toLang }: { fromLang: string; toLang: string }) =>
       autoTranslateMenu(id!, fromLang, toLang),
@@ -92,6 +92,47 @@ const TranslationEditorPage: React.FC = () => {
           name: data.name,
           description: data.description || '',
           cultural_note: data.cultural_note || '',
+        },
+      }));
+      setSavedLangs((prev) => new Set([...prev, activeLang]));
+      queryClient.invalidateQueries({ queryKey: ['admin-menu-translations', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-menus'] });
+    },
+  });
+
+  // Bulk translate mutation (translates all + saves on server)
+  const bulkTranslateMutation = useMutation({
+    mutationFn: ({ fromLang, toLangs }: { fromLang: string; toLangs: string[] }) =>
+      bulkTranslateMenu(id!, fromLang, toLangs),
+    onSuccess: (result) => {
+      const translatedLangs = Object.keys(result.translations);
+      setForms((prev) => {
+        const updated = { ...prev };
+        for (const [lang, data] of Object.entries(result.translations)) {
+          updated[lang] = {
+            name: data.name,
+            description: data.description || '',
+            cultural_note: data.cultural_note || '',
+          };
+        }
+        return updated;
+      });
+      setSavedLangs((prev) => new Set([...prev, ...translatedLangs]));
+      queryClient.invalidateQueries({ queryKey: ['admin-menu-translations', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-menus'] });
+    },
+  });
+
+  // Cultural note generation mutation
+  const culturalNoteMutation = useMutation({
+    mutationFn: ({ lang }: { lang: string }) =>
+      generateCulturalNote(id!, lang),
+    onSuccess: (note) => {
+      setForms((prev) => ({
+        ...prev,
+        [activeLang]: {
+          ...(prev[activeLang] || emptyForm),
+          cultural_note: note,
         },
       }));
     },
@@ -122,6 +163,13 @@ const TranslationEditorPage: React.FC = () => {
 
   const handleAutoTranslate = () => {
     translateMutation.mutate({ fromLang: baseLang, toLang: activeLang });
+  };
+
+  const handleBulkTranslate = () => {
+    const toLangs = SUPPORTED_LANGUAGES.filter(
+      (lang: SupportedLanguage) => lang !== baseLang,
+    );
+    bulkTranslateMutation.mutate({ fromLang: baseLang, toLangs });
   };
 
   // Available base languages (those with content)
@@ -262,10 +310,29 @@ const TranslationEditorPage: React.FC = () => {
                   {t('admin.auto_translate')}
                 </Button>
               </div>
-              {translateMutation.isPending && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBulkTranslate}
+                  loading={bulkTranslateMutation.isPending}
+                  disabled={!baseForm.name?.trim()}
+                  icon="g_translate"
+                >
+                  {t('admin.translate_all')}
+                </Button>
+                <span className="text-[11px] text-blue-500">
+                  {t('admin.translate_all_desc')}
+                </span>
+              </div>
+              {(translateMutation.isPending || bulkTranslateMutation.isPending) && (
                 <div className="flex items-center gap-2 mt-1">
                   <Spinner size="sm" />
-                  <span className="text-xs text-blue-600">{t('admin.translating')}</span>
+                  <span className="text-xs text-blue-600">
+                    {bulkTranslateMutation.isPending
+                      ? t('admin.translating_all')
+                      : t('admin.translating')}
+                  </span>
                 </div>
               )}
               {translateMutation.isError && (
@@ -274,6 +341,31 @@ const TranslationEditorPage: React.FC = () => {
                     ? translateMutation.error.message
                     : t('admin.translate_failed')}
                 </p>
+              )}
+              {bulkTranslateMutation.isError && (
+                <p className="text-xs text-red-500 mt-1">
+                  {bulkTranslateMutation.error instanceof Error
+                    ? bulkTranslateMutation.error.message
+                    : t('admin.translate_failed')}
+                </p>
+              )}
+              {bulkTranslateMutation.isSuccess && (
+                <div className="flex flex-col gap-1 mt-1">
+                  <p className="text-xs text-green-600">
+                    {t('admin.translate_all_complete', {
+                      count: Object.keys(bulkTranslateMutation.data.translations).length,
+                    })}
+                  </p>
+                  {Object.keys(bulkTranslateMutation.data.errors).length > 0 && (
+                    <p className="text-xs text-orange-500">
+                      {t('admin.translate_all_partial', {
+                        langs: Object.keys(bulkTranslateMutation.data.errors)
+                          .map((l) => LANGUAGE_LABELS[l as SupportedLanguage] || l)
+                          .join(', '),
+                      })}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -321,9 +413,21 @@ const TranslationEditorPage: React.FC = () => {
 
           {/* Cultural Note */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">
-              {t('admin.cultural_note_label', { language: LANGUAGE_LABELS[activeLang] || activeLang })}
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">
+                {t('admin.cultural_note_label', { language: LANGUAGE_LABELS[activeLang] || activeLang })}
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon="auto_awesome"
+                onClick={() => culturalNoteMutation.mutate({ lang: activeLang })}
+                loading={culturalNoteMutation.isPending}
+                disabled={!currentForm.name.trim()}
+              >
+                {t('admin.generate_cultural_note')}
+              </Button>
+            </div>
             <textarea
               placeholder={t('admin.cultural_note_placeholder')}
               value={currentForm.cultural_note}
@@ -331,17 +435,30 @@ const TranslationEditorPage: React.FC = () => {
               rows={2}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none placeholder:text-gray-400"
             />
+            {culturalNoteMutation.isPending && (
+              <div className="flex items-center gap-2">
+                <Spinner size="sm" />
+                <span className="text-xs text-blue-600">{t('admin.generating_cultural_note')}</span>
+              </div>
+            )}
+            {culturalNoteMutation.isError && (
+              <p className="text-xs text-red-500">
+                {culturalNoteMutation.error instanceof Error
+                  ? culturalNoteMutation.error.message
+                  : t('admin.cultural_note_gen_failed')}
+              </p>
+            )}
           </div>
 
           {/* Spiciness & Challenge display */}
           <div className="flex gap-6">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-gray-500">{t('admin.spiciness_level_label')}</label>
-              <RatingDots level={menu.spiciness_level} color="#ef4444" />
+              <RatingDots level={menu.spiciness_level} emoji="🌶️" />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-gray-500">{t('admin.challenge_level_label')}</label>
-              <RatingDots level={menu.challenge_level} color="#e68119" />
+              <RatingDots level={menu.challenge_level} emoji="💪" />
             </div>
           </div>
 
