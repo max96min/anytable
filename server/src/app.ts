@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from 'cors';
 import { errorHandler } from './middleware/error.js';
 import { publicRateLimit, adminRateLimit, systemRateLimit } from './middleware/rate-limit.js';
@@ -155,6 +156,7 @@ export function createApp() {
   // Production: serve React SPA from client/dist
   // ---------------------------------------------------------------------------
   if (process.env.NODE_ENV === 'production') {
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const clientDist = path.join(__dirname, '../../client/dist');
     app.use(express.static(clientDist));
     app.get('*', (_req, res, next) => {
