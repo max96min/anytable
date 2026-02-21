@@ -133,10 +133,10 @@ export async function create(storeId: string, data: {
               is_required: opt.is_required ?? false,
               max_select: opt.max_select ?? 1,
               values: opt.values.map((v) => ({
-                id: v.id ?? undefined,
+                id: v.id,
                 locales: v.locales,
                 price_delta: v.price_delta ?? 0,
-              })),
+              })) as unknown as object,
               sort_order: opt.sort_order ?? idx,
             })),
           }
@@ -149,7 +149,7 @@ export async function create(storeId: string, data: {
     },
   });
 
-  return formatMenu(menu);
+  return formatMenu(menu as Parameters<typeof formatMenu>[0]);
 }
 
 export async function update(id: string, storeId: string, data: {
@@ -236,10 +236,10 @@ export async function update(id: string, storeId: string, data: {
             is_required: opt.is_required ?? false,
             max_select: opt.max_select ?? 1,
             values: opt.values.map((v) => ({
-              id: v.id ?? undefined,
+              id: v.id,
               locales: v.locales,
               price_delta: v.price_delta ?? 0,
-            })),
+            })) as unknown as object,
             sort_order: opt.sort_order ?? idx,
           })),
         });

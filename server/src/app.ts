@@ -151,6 +151,21 @@ export function createApp() {
   // GET /api/exchange-rates?from=KRW
   app.use('/api/exchange-rates', publicRateLimit, exchangeRatesRoutes);
 
+  // ---------------------------------------------------------------------------
+  // Production: serve React SPA from client/dist
+  // ---------------------------------------------------------------------------
+  if (process.env.NODE_ENV === 'production') {
+    const clientDist = path.join(__dirname, '../../client/dist');
+    app.use(express.static(clientDist));
+    app.get('*', (_req, res, next) => {
+      // Don't serve index.html for unknown API routes — let error handler return 404
+      if (_req.path.startsWith('/api/')) {
+        return next();
+      }
+      res.sendFile(path.join(clientDist, 'index.html'));
+    });
+  }
+
   // Global error handler (must be after routes)
   app.use(errorHandler);
 

@@ -90,7 +90,7 @@ const SettingsPage: React.FC = () => {
   const handleLogoRemove = async () => {
     setLogoUploading(true);
     try {
-      const updated = await updateStore({ logo_url: null });
+      const updated = await updateStore({ logo_url: undefined });
       queryClient.setQueryData(['admin-store'], updated);
       setLogoUrl(null);
     } catch {
@@ -194,7 +194,7 @@ const SettingsPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Spinner size={32} />
+        <Spinner size="lg" />
       </div>
     );
   }

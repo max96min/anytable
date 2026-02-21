@@ -272,7 +272,7 @@ const OwnerListPage: React.FC = () => {
               <div className="flex gap-3 mt-2">
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   fullWidth
                   onClick={() => setShowModal(false)}
                 >
