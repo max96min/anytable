@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Owner {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password_hash String
+  name          String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  stores        Store[]
+}
+
+model Store {
+  id                  String   @id @default(uuid())
+  owner_id            String
+  owner               Owner    @relation(fields: [owner_id], references: [id])
+  name                String
+  address             String?
+  phone               String?
+  default_language    String   @default("en")
+  supported_languages String[] @default(["en", "ko", "ja", "zh", "es"])
+  settings            Json     @default("{}")
+  is_active           Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  tables     Table[]
+  categories Category[]
+  menus      Menu[]
+  orders     Order[]
+  sessions   TableSession[]
+}
+
+model Table {
+  id               String   @id @default(uuid())
+  store_id         String
+  store            Store    @relation(fields: [store_id], references: [id])
+  table_number     Int
+  label            String?
+  seats            Int      @default(4)
+  status           String   @default("ACTIVE")
+  qr_token         String   @unique
+  qr_token_version Int      @default(1)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  sessions TableSession[]
+  orders   Order[]
+
+  @@unique([store_id, table_number])
+}
+
+model TableSession {
+  id                 String    @id @default(uuid())
+  store_id           String
+  store              Store     @relation(fields: [store_id], references: [id])
+  table_id           String
+  table              Table     @relation(fields: [table_id], references: [id])
+  status             String    @default("OPEN")
+  current_round_no   Int       @default(0)
+  host_participant_id String?
+  participants_count Int       @default(0)
+  created_at         DateTime  @default(now())
+  last_activity_at   DateTime  @default(now())
+  closed_at          DateTime?
+  expires_at         DateTime
+
+  participants Participant[]
+  cart         SharedCart?
+  orders       Order[]
+}
+
+model Participant {
+  id                    String   @id @default(uuid())
+  session_id            String
+  session               TableSession @relation(fields: [session_id], references: [id])
+  nickname              String
+  device_fingerprint_hash String
+  role                  String   @default("GUEST")
+  avatar_color          String   @default("#e68119")
+  language              String   @default("en")
+  joined_at             DateTime @default(now())
+  last_seen_at          DateTime @default(now())
+  is_active             Boolean  @default(true)
+
+  cart_items CartItem[]
+}
+
+model Category {
+  id         String   @id @default(uuid())
+  store_id   String
+  store      Store    @relation(fields: [store_id], references: [id])
+  sort_order Int      @default(0)
+  locales    Json     @default("{}")
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  menus Menu[]
+}
+
+model Menu {
+  id              String   @id @default(uuid())
+  store_id        String
+  store           Store    @relation(fields: [store_id], references: [id])
+  category_id     String
+  category        Category @relation(fields: [category_id], references: [id])
+  base_price      Int
+  image_url       String?
+  is_sold_out     Boolean  @default(false)
+  is_recommended  Boolean  @default(false)
+  is_hidden       Boolean  @default(false)
+  dietary_tags    String[] @default([])
+  allergens       String[] @default([])
+  spiciness_level Int      @default(0)
+  challenge_level Int      @default(0)
+  locales         Json     @default("{}")
+  sort_order      Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  options    MenuOption[]
+  cart_items CartItem[]
+}
+
+model MenuOption {
+  id          String  @id @default(uuid())
+  menu_id     String
+  menu        Menu    @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+  locales     Json    @default("{}")
+  is_required Boolean @default(false)
+  max_select  Int     @default(1)
+  values      Json    @default("[]")
+  sort_order  Int     @default(0)
+}
+
+model SharedCart {
+  id         String       @id @default(uuid())
+  session_id String       @unique
+  session    TableSession @relation(fields: [session_id], references: [id])
+  version    Int          @default(1)
+  updated_at DateTime     @default(now())
+
+  items CartItem[]
+}
+
+model CartItem {
+  id               String      @id @default(uuid())
+  cart_id          String
+  cart             SharedCart   @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  menu_id          String
+  menu             Menu        @relation(fields: [menu_id], references: [id])
+  participant_id   String
+  participant      Participant @relation(fields: [participant_id], references: [id])
+  quantity         Int         @default(1)
+  selected_options Json        @default("[]")
+  unit_price       Int
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+}
+
+model Order {
+  id              String       @id @default(uuid())
+  store_id        String
+  store           Store        @relation(fields: [store_id], references: [id])
+  table_id        String
+  table           Table        @relation(fields: [table_id], references: [id])
+  session_id      String
+  session         TableSession @relation(fields: [session_id], references: [id])
+  round_no        Int
+  status          String       @default("PLACED")
+  items           Json         @default("[]")
+  subtotal        Int          @default(0)
+  tax             Int          @default(0)
+  service_charge  Int          @default(0)
+  grand_total     Int          @default(0)
+  idempotency_key String?      @unique
+  placed_at       DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+}
