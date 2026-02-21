@@ -8,6 +8,7 @@ import type {
   SessionDTO,
   SupportedLanguage,
   MenuLocale,
+  StoreDTO,
 } from '@anytable/shared';
 
 const BASE = '/api/admin';
@@ -44,6 +45,19 @@ async function adminFetch<T>(
     throw new Error(json.error || 'Unknown error');
   }
   return json.data as T;
+}
+
+// ============ Store ============
+
+export async function getStore(): Promise<StoreDTO> {
+  return adminFetch<StoreDTO>('/stores');
+}
+
+export async function updateStore(data: Partial<Omit<StoreDTO, 'id'>>): Promise<StoreDTO> {
+  return adminFetch<StoreDTO>('/stores', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 // ============ Auth ============
@@ -159,6 +173,7 @@ export async function updateTable(
 export interface QrResult {
   qr_url: string;
   qr_token: string;
+  short_code?: string;
 }
 
 export async function regenerateQr(tableId: string): Promise<QrResult> {
@@ -290,6 +305,54 @@ export async function saveMenuTranslation(
     method: 'PUT',
     body: JSON.stringify(data),
   });
+}
+
+export interface AutoTranslateResult {
+  name: string;
+  description?: string;
+  cultural_note?: string;
+}
+
+export async function autoTranslateMenu(
+  menuId: string,
+  fromLang: string,
+  toLang: string,
+): Promise<AutoTranslateResult> {
+  return adminFetch<AutoTranslateResult>(`/menus/${menuId}/auto-translate`, {
+    method: 'POST',
+    body: JSON.stringify({ from_lang: fromLang, to_lang: toLang }),
+  });
+}
+
+// ============ Images ============
+
+export async function uploadMenuImage(file: File): Promise<string> {
+  const token = getAccessToken();
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const res = await fetch(`${BASE}/images/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || body.message || `Upload failed: ${res.status}`);
+  }
+
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Upload failed');
+  return json.data.image_url;
+}
+
+export async function generateMenuImage(prompt: string): Promise<string> {
+  const data = await adminFetch<{ image_url: string }>('/images/generate', {
+    method: 'POST',
+    body: JSON.stringify({ prompt }),
+  });
+  return data.image_url;
 }
 
 // ============ Analytics ============

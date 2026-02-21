@@ -28,11 +28,15 @@ export const refreshTokenSchema = z.object({
 
 export const joinSessionSchema = z.object({
   body: z.object({
-    qr_token: z.string().min(1, 'QR token is required'),
-    nickname: z.string().min(1, 'Nickname is required').max(30),
+    qr_token: z.string().min(1).optional(),
+    short_code: z.string().min(1).optional(),
+    nickname: z.string().max(30).optional().default(''),
     device_fingerprint: z.string().min(1, 'Device fingerprint is required'),
     language: z.enum(['en', 'ko', 'ja', 'zh', 'es']).optional().default('en'),
-  }),
+  }).refine(
+    (data) => data.qr_token || data.short_code,
+    { message: 'Either qr_token or short_code is required' },
+  ),
 });
 
 export const sessionIdParamSchema = z.object({
@@ -143,7 +147,7 @@ export const createMenuSchema = z.object({
   body: z.object({
     category_id: z.string().uuid('Invalid category ID'),
     base_price: z.number().int().min(0, 'Price must be non-negative'),
-    image_url: z.string().url().optional().nullable(),
+    image_url: z.string().min(1).optional().nullable(),
     is_sold_out: z.boolean().optional().default(false),
     is_recommended: z.boolean().optional().default(false),
     is_hidden: z.boolean().optional().default(false),
@@ -161,7 +165,7 @@ export const updateMenuSchema = z.object({
   body: z.object({
     category_id: z.string().uuid().optional(),
     base_price: z.number().int().min(0).optional(),
-    image_url: z.string().url().optional().nullable(),
+    image_url: z.string().min(1).optional().nullable(),
     is_sold_out: z.boolean().optional(),
     is_recommended: z.boolean().optional(),
     is_hidden: z.boolean().optional(),
@@ -208,6 +212,7 @@ export const updateTableSchema = z.object({
 export const updateStoreSchema = z.object({
   body: z.object({
     name: z.string().min(1).max(200).optional(),
+    logo_url: z.string().min(1).optional().nullable(),
     address: z.string().optional().nullable(),
     phone: z.string().optional().nullable(),
     default_language: z.enum(['en', 'ko', 'ja', 'zh', 'es']).optional(),

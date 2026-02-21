@@ -7,6 +7,7 @@ export async function getStore(id: string) {
     select: {
       id: true,
       name: true,
+      logo_url: true,
       address: true,
       phone: true,
       default_language: true,
@@ -29,6 +30,7 @@ export async function getStoreByOwnerId(ownerId: string) {
     select: {
       id: true,
       name: true,
+      logo_url: true,
       address: true,
       phone: true,
       default_language: true,
@@ -47,6 +49,7 @@ export async function getStoreByOwnerId(ownerId: string) {
 
 export async function updateStore(id: string, data: {
   name?: string;
+  logo_url?: string | null;
   address?: string | null;
   phone?: string | null;
   default_language?: string;
@@ -76,6 +79,7 @@ export async function updateStore(id: string, data: {
     select: {
       id: true,
       name: true,
+      logo_url: true,
       address: true,
       phone: true,
       default_language: true,

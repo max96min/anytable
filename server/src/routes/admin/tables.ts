@@ -5,6 +5,7 @@ import { createTableSchema, updateTableSchema } from '../../schemas/index.js';
 import { prisma } from '../../lib/prisma.js';
 import { AppError } from '../../lib/errors.js';
 import { generateQrToken } from '../../services/qr.service.js';
+import { generateUniqueShortCode } from '../../services/short-code.service.js';
 
 const router = Router();
 
@@ -27,6 +28,7 @@ router.get(
           status: true,
           qr_token: true,
           qr_token_version: true,
+          short_code: true,
           created_at: true,
           sessions: {
             where: { status: 'OPEN' },
@@ -43,6 +45,7 @@ router.get(
         label: t.label,
         seats: t.seats,
         status: t.status,
+        short_code: t.short_code,
         qr_token: t.qr_token,
         qr_token_version: t.qr_token_version,
         current_session_id: t.sessions[0]?.id ?? null,
@@ -69,11 +72,15 @@ router.post(
         tables: Array<{ table_number: number; label?: string; seats: number }>;
       };
 
+      // Generate short codes upfront
+      const shortCodes: string[] = [];
+      for (let i = 0; i < tableInputs.length; i++) {
+        shortCodes.push(await generateUniqueShortCode());
+      }
+
       const created = await prisma.$transaction(
-        tableInputs.map((t) => {
+        tableInputs.map((t, idx) => {
           const qrToken = generateQrToken(
-            // We don't have the ID yet, so we use a placeholder flow:
-            // Actually, we need to create then update. Instead, use a two-step:
             `placeholder-${t.table_number}`,
             storeId,
             1
@@ -87,6 +94,7 @@ router.post(
               seats: t.seats,
               qr_token: qrToken,
               qr_token_version: 1,
+              short_code: shortCodes[idx],
             },
           });
         })
@@ -112,6 +120,7 @@ router.post(
           label: t.label,
           seats: t.seats,
           status: t.status,
+          short_code: t.short_code,
           qr_token: t.qr_token,
           qr_token_version: t.qr_token_version,
         })),
@@ -155,6 +164,7 @@ router.patch(
           label: updated.label,
           seats: updated.seats,
           status: updated.status,
+          short_code: updated.short_code,
           qr_token: updated.qr_token,
           qr_token_version: updated.qr_token_version,
         },
@@ -185,12 +195,14 @@ router.post(
 
       const newVersion = table.qr_token_version + 1;
       const newQrToken = generateQrToken(table.id, table.store_id, newVersion);
+      const newShortCode = await generateUniqueShortCode();
 
       const updated = await prisma.table.update({
         where: { id: req.params.id },
         data: {
           qr_token: newQrToken,
           qr_token_version: newVersion,
+          short_code: newShortCode,
         },
       });
 
@@ -200,6 +212,7 @@ router.post(
           id: updated.id,
           qr_token: updated.qr_token,
           qr_token_version: updated.qr_token_version,
+          short_code: updated.short_code,
         },
       });
     } catch (err) {

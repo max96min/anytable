@@ -50,6 +50,7 @@ export interface StoreSettings {
 export interface StoreDTO {
   id: string;
   name: string;
+  logo_url?: string;
   address?: string;
   phone?: string;
   default_language: SupportedLanguage;
@@ -66,6 +67,7 @@ export interface TableDTO {
   label?: string;
   status: TableStatus;
   seats: number;
+  short_code: string;
   current_session_id?: string | null;
 }
 
@@ -94,7 +96,8 @@ export interface ParticipantDTO {
 // ============ Join Session ============
 
 export interface JoinSessionRequest {
-  qr_token: string;
+  qr_token?: string;
+  short_code?: string;
   nickname: string;
   device_fingerprint: string;
   language?: SupportedLanguage;
@@ -250,6 +253,89 @@ export interface AdminLoginResponse {
     name: string;
     store_id: string;
   };
+}
+
+// ============ System Admin ============
+
+export interface SystemAdminDTO {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface SystemLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface SystemLoginResponse {
+  access_token: string;
+  refresh_token: string;
+  admin: SystemAdminDTO;
+}
+
+export interface SystemStoreDTO {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  owner: {
+    id: string;
+    name: string;
+    email: string;
+    is_active: boolean;
+  };
+}
+
+export interface SystemStoreDetailDTO extends SystemStoreDTO {
+  address?: string | null;
+  phone?: string | null;
+  default_language: string;
+  supported_languages: string[];
+  table_count: number;
+  menu_count: number;
+  orders_today: number;
+  revenue_today: number;
+}
+
+export interface SystemOwnerDTO {
+  id: string;
+  name: string;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+  stores: { id: string; name: string; is_active: boolean }[];
+}
+
+export interface PlatformStatsDTO {
+  total_stores: number;
+  active_stores: number;
+  total_owners: number;
+  orders_today: number;
+  revenue_today: number;
+  recent_orders: RecentOrderDTO[];
+}
+
+export interface RecentOrderDTO {
+  id: string;
+  store_name: string;
+  table_number: number;
+  status: string;
+  grand_total: number;
+  placed_at: string;
+}
+
+export interface PaginationMeta {
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CreateOwnerStoreRequest {
+  email: string;
+  password: string;
+  name: string;
+  store_name: string;
 }
 
 // ============ Socket Events ============

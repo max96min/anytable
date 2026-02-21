@@ -137,9 +137,9 @@ const MenuManagementPage: React.FC = () => {
             variant="primary"
             size="sm"
             icon="add"
-            onClick={() => navigate('/admin/menus/new')}
+            onClick={() => navigate('/admin/menu/new')}
           >
-            Add Menu
+            {t('admin.add_menu')}
           </Button>
         </div>
 
@@ -152,7 +152,7 @@ const MenuManagementPage: React.FC = () => {
           />
           <input
             type="text"
-            placeholder="Search by name..."
+            placeholder={t('admin.search_menu_placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -177,7 +177,7 @@ const MenuManagementPage: React.FC = () => {
                 : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
             }`}
           >
-            All
+            {t('admin.all_categories')}
           </button>
           {categories.map((cat) => (
             <button
@@ -198,7 +198,7 @@ const MenuManagementPage: React.FC = () => {
 
         {/* Sort */}
         <div className="flex items-center gap-2 mt-3">
-          <span className="text-xs text-gray-500">Sort by:</span>
+          <span className="text-xs text-gray-500">{t('admin.sort_by')}</span>
           {(['name', 'price', 'category'] as SortKey[]).map((key) => (
             <button
               key={key}
@@ -209,7 +209,7 @@ const MenuManagementPage: React.FC = () => {
                   : 'text-gray-500 hover:bg-gray-100'
               }`}
             >
-              {key.charAt(0).toUpperCase() + key.slice(1)}
+              {t(`admin.sort_${key}`)}
             </button>
           ))}
         </div>
@@ -225,15 +225,15 @@ const MenuManagementPage: React.FC = () => {
           <div className="flex flex-col items-center justify-center py-20 gap-2">
             <Icon name="restaurant_menu" size={48} className="text-gray-300" />
             <p className="text-sm text-gray-500">
-              {searchQuery ? 'No menus match your search' : 'No menu items yet'}
+              {searchQuery ? t('admin.no_menus_search') : t('admin.no_menu_items')}
             </p>
             {!searchQuery && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/admin/menus/new')}
+                onClick={() => navigate('/admin/menu/new')}
               >
-                Create your first menu item
+                {t('admin.create_first_menu')}
               </Button>
             )}
           </div>
@@ -259,13 +259,13 @@ const MenuManagementPage: React.FC = () => {
                     {/* Status badges overlay */}
                     <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
                       {menu.is_sold_out && (
-                        <Badge variant="red" size="sm">Sold Out</Badge>
+                        <Badge variant="red" size="sm">{t('admin.sold_out')}</Badge>
                       )}
                       {menu.is_hidden && (
-                        <Badge variant="gray" size="sm">Hidden</Badge>
+                        <Badge variant="gray" size="sm">{t('admin.hidden')}</Badge>
                       )}
                       {menu.is_recommended && (
-                        <Badge variant="orange" size="sm">Recommended</Badge>
+                        <Badge variant="orange" size="sm">{t('admin.recommended')}</Badge>
                       )}
                     </div>
                   </div>
@@ -302,7 +302,7 @@ const MenuManagementPage: React.FC = () => {
                         />
                       </div>
                       <span className="text-[10px] text-gray-400">
-                        {progress.count}/{progress.total} languages
+                        {t('admin.translation_progress', { count: progress.count, total: progress.total })}
                       </span>
                     </div>
                   </div>
@@ -327,23 +327,23 @@ const MenuManagementPage: React.FC = () => {
                         name={menu.is_sold_out ? 'check_circle' : 'block'}
                         size={16}
                       />
-                      {menu.is_sold_out ? 'Available' : 'Sold Out'}
+                      {menu.is_sold_out ? t('admin.mark_available') : t('admin.mark_sold_out')}
                     </button>
                     <button
-                      onClick={() => navigate(`/admin/menus/${menu.id}/translate`)}
+                      onClick={() => navigate(`/admin/menu/${menu.id}/translations`)}
                       className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-gray-600 hover:bg-gray-200 transition-colors"
                       title="Translations"
                     >
                       <Icon name="translate" size={16} />
-                      Translate
+                      {t('admin.translate')}
                     </button>
                     <button
-                      onClick={() => navigate(`/admin/menus/${menu.id}/edit`)}
+                      onClick={() => navigate(`/admin/menu/${menu.id}`)}
                       className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-gray-600 hover:bg-gray-200 transition-colors ml-auto"
                       title="Edit"
                     >
                       <Icon name="edit" size={16} />
-                      Edit
+                      {t('admin.edit')}
                     </button>
                     <button
                       onClick={() => setConfirmDelete(menu)}
@@ -364,21 +364,17 @@ const MenuManagementPage: React.FC = () => {
       <Modal
         open={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
-        title="Delete Menu Item?"
+        title={t('admin.delete_menu_title')}
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-gray-600">
-            Are you sure you want to delete{' '}
-            <span className="font-semibold">
-              {confirmDelete ? getMenuName(confirmDelete) : ''}
-            </span>
-            ? This action cannot be undone.
+            {t('admin.delete_menu_confirm', { name: confirmDelete ? getMenuName(confirmDelete) : '' })}
           </p>
           {deleteMutation.isError && (
             <p className="text-sm text-red-500">
               {deleteMutation.error instanceof Error
                 ? deleteMutation.error.message
-                : 'Failed to delete'}
+                : t('admin.failed_delete')}
             </p>
           )}
           <div className="flex gap-2 justify-end">

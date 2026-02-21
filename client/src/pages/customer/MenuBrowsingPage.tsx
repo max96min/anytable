@@ -87,11 +87,20 @@ const MenuBrowsingPage: React.FC = () => {
       {/* Header */}
       <div className="sticky top-0 z-30 bg-surface-light pt-4 pb-2 px-4">
         <div className="flex items-center justify-between mb-3">
-          <div>
-            <p className="text-xs text-gray-500">{t('menu.your_table')}</p>
-            <h1 className="text-lg font-bold text-surface-dark">
-              {t('menu.table_number', { number: session?.table_number ?? '' })}
-            </h1>
+          <div className="flex items-center gap-2.5">
+            {store?.logo_url ? (
+              <img src={store.logo_url} alt={store.name} className="w-9 h-9 rounded-lg object-cover" />
+            ) : (
+              <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center">
+                <Icon name="restaurant" size={18} className="text-primary-600" />
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-gray-500">{store?.name ?? t('menu.your_table')}</p>
+              <h1 className="text-lg font-bold text-surface-dark leading-tight">
+                {t('menu.table_number', { number: session?.table_number ?? '' })}
+              </h1>
+            </div>
           </div>
           <button
             onClick={() => navigate('/preferences')}

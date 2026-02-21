@@ -11,9 +11,9 @@ router.post(
   validate(joinSessionSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { qr_token, nickname, device_fingerprint, language } = req.body;
+      const { qr_token, short_code, nickname, device_fingerprint, language } = req.body;
       const result = await tableSessionService.joinSession(
-        qr_token,
+        { qrToken: qr_token, shortCode: short_code },
         nickname,
         device_fingerprint,
         language

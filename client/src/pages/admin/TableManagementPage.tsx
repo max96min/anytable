@@ -24,8 +24,8 @@ function sessionDuration(startedAt: string): string {
   const diff = Date.now() - new Date(startedAt).getTime();
   const mins = Math.floor(diff / 60_000);
   if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  return `${hrs}h ${mins % 60}m`;
+  const h = Math.floor(mins / 60);
+  return `${h}h ${mins % 60}m`;
 }
 
 const TableManagementPage: React.FC = () => {
@@ -144,19 +144,19 @@ const TableManagementPage: React.FC = () => {
   const getStatusBadge = (table: TableDTO) => {
     const session = sessionByTable[table.id];
     if (session) {
-      return <Badge variant="green">In Session</Badge>;
+      return <Badge variant="green">{t('admin.in_session')}</Badge>;
     }
     if (table.status === 'ACTIVE') {
-      return <Badge variant="blue">Active</Badge>;
+      return <Badge variant="blue">{t('admin.active')}</Badge>;
     }
-    return <Badge variant="gray">Inactive</Badge>;
+    return <Badge variant="gray">{t('admin.inactive')}</Badge>;
   };
 
   const filterChips: { key: FilterKey; label: string }[] = [
-    { key: 'all', label: `All (${counts.all})` },
-    { key: 'active', label: `Active (${counts.active})` },
-    { key: 'in_session', label: `In Session (${counts.in_session})` },
-    { key: 'inactive', label: `Inactive (${counts.inactive})` },
+    { key: 'all', label: t('admin.all_count', { count: counts.all }) },
+    { key: 'active', label: t('admin.active_count', { count: counts.active }) },
+    { key: 'in_session', label: t('admin.in_session_count', { count: counts.in_session }) },
+    { key: 'inactive', label: t('admin.inactive_count', { count: counts.inactive }) },
   ];
 
   return (
@@ -173,7 +173,7 @@ const TableManagementPage: React.FC = () => {
             icon="add"
             onClick={() => setShowAddModal(true)}
           >
-            Add Tables
+            {t('admin.add_tables')}
           </Button>
         </div>
 
@@ -204,9 +204,9 @@ const TableManagementPage: React.FC = () => {
         ) : filteredTables.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-2">
             <Icon name="table_restaurant" size={48} className="text-gray-300" />
-            <p className="text-sm text-gray-500">No tables found</p>
+            <p className="text-sm text-gray-500">{t('admin.no_tables')}</p>
             <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}>
-              Add your first tables
+              {t('admin.add_first_tables')}
             </Button>
           </div>
         ) : (
@@ -223,9 +223,14 @@ const TableManagementPage: React.FC = () => {
                         </span>
                         {getStatusBadge(table)}
                       </div>
-                      <div className="flex items-center gap-1 text-gray-400">
-                        <Icon name="group" size={16} />
-                        <span className="text-xs">{table.seats} seats</span>
+                      <div className="flex items-center gap-2 text-gray-400">
+                        <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-600" title="Table Code">
+                          {table.short_code}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Icon name="group" size={16} />
+                          <span className="text-xs">{t('admin.seats', { count: table.seats })}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -234,14 +239,14 @@ const TableManagementPage: React.FC = () => {
                       <div className="bg-green-50 rounded-lg px-3 py-2 mt-2">
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-green-700 font-medium">
-                            {session.participants_count} participant{session.participants_count !== 1 ? 's' : ''}
+                            {session.participants_count === 1 ? t('admin.participants', { count: session.participants_count }) : t('admin.participants_plural', { count: session.participants_count })}
                           </span>
                           <span className="text-green-600">
                             {sessionDuration(session.created_at)}
                           </span>
                         </div>
                         <div className="text-xs text-green-600 mt-0.5">
-                          Round {session.current_round_no}
+                          {t('admin.current_round', { number: session.current_round_no })}
                         </div>
                       </div>
                     )}
@@ -257,7 +262,7 @@ const TableManagementPage: React.FC = () => {
                       title="View QR"
                     >
                       <Icon name="qr_code" size={16} />
-                      QR
+                      {t('admin.qr')}
                     </button>
                     <button
                       onClick={() => setConfirmRegenerate(table.id)}
@@ -265,7 +270,7 @@ const TableManagementPage: React.FC = () => {
                       title="Regenerate QR"
                     >
                       <Icon name="refresh" size={16} />
-                      Regen
+                      {t('admin.regen')}
                     </button>
                     {session && (
                       <button
@@ -274,7 +279,7 @@ const TableManagementPage: React.FC = () => {
                         title="Close Session"
                       >
                         <Icon name="close" size={16} />
-                        Close
+                        {t('admin.close_action')}
                       </button>
                     )}
                     <button
@@ -290,13 +295,13 @@ const TableManagementPage: React.FC = () => {
                           ? 'text-gray-500 hover:bg-gray-200'
                           : 'text-green-600 hover:bg-green-50'
                       }`}
-                      title={table.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                      title={table.status === 'ACTIVE' ? t('admin.deactivate') : t('admin.activate')}
                     >
                       <Icon
                         name={table.status === 'ACTIVE' ? 'toggle_on' : 'toggle_off'}
                         size={16}
                       />
-                      {table.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                      {table.status === 'ACTIVE' ? t('admin.deactivate') : t('admin.activate')}
                     </button>
                   </div>
                 </Card>
@@ -310,22 +315,22 @@ const TableManagementPage: React.FC = () => {
       <Modal
         open={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Add Tables"
+        title={t('admin.add_tables')}
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-gray-500">
-            Create multiple tables at once by specifying a range.
+            {t('admin.add_tables_desc')}
           </p>
           <div className="flex gap-3">
             <Input
-              label="From Table #"
+              label={t('admin.from_table')}
               type="number"
               min={1}
               value={startNum}
               onChange={(e) => setStartNum(e.target.value)}
             />
             <Input
-              label="To Table #"
+              label={t('admin.to_table')}
               type="number"
               min={1}
               value={endNum}
@@ -333,7 +338,7 @@ const TableManagementPage: React.FC = () => {
             />
           </div>
           <Input
-            label="Seats per table"
+            label={t('admin.seats_per_table')}
             type="number"
             min={1}
             max={20}
@@ -344,7 +349,7 @@ const TableManagementPage: React.FC = () => {
             <p className="text-sm text-red-500">
               {createMutation.error instanceof Error
                 ? createMutation.error.message
-                : 'Failed to create tables'}
+                : t('admin.failed_create_tables')}
             </p>
           )}
           <div className="flex gap-2 justify-end mt-2">
@@ -357,7 +362,7 @@ const TableManagementPage: React.FC = () => {
               loading={createMutation.isPending}
               onClick={handleAddTables}
             >
-              Create Tables
+              {t('admin.create_tables')}
             </Button>
           </div>
         </div>
@@ -367,7 +372,7 @@ const TableManagementPage: React.FC = () => {
       <Modal
         open={!!showQrModal}
         onClose={() => setShowQrModal(null)}
-        title="QR Code"
+        title={t('admin.qr_code')}
       >
         <div className="flex flex-col items-center gap-4">
           <div className="w-64 h-64 bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200">
@@ -384,7 +389,7 @@ const TableManagementPage: React.FC = () => {
             <Icon name="qr_code_2" size={80} className="text-gray-300" />
           </div>
           <p className="text-xs text-gray-400 text-center">
-            Print this QR code and place it on the table for customers to scan.
+            {t('admin.qr_code_desc')}
           </p>
           <Button
             variant="outline"
@@ -394,7 +399,7 @@ const TableManagementPage: React.FC = () => {
               if (showQrModal) window.open(showQrModal, '_blank');
             }}
           >
-            Print QR Code
+            {t('admin.print_qr')}
           </Button>
         </div>
       </Modal>
@@ -403,14 +408,13 @@ const TableManagementPage: React.FC = () => {
       <Modal
         open={!!confirmRegenerate}
         onClose={() => setConfirmRegenerate(null)}
-        title="Regenerate QR Code?"
+        title={t('admin.regenerate_qr_title')}
       >
         <div className="flex flex-col gap-4">
           <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-xl border border-amber-100">
             <Icon name="warning" size={20} className="text-amber-600 shrink-0 mt-0.5" />
             <p className="text-sm text-amber-700">
-              This will invalidate the current QR code. Customers with the old QR code will
-              not be able to scan it. You will need to print and replace the physical QR code.
+              {t('admin.regenerate_qr_warning')}
             </p>
           </div>
           <div className="flex gap-2 justify-end">
@@ -429,7 +433,7 @@ const TableManagementPage: React.FC = () => {
                 if (confirmRegenerate) qrMutation.mutate(confirmRegenerate);
               }}
             >
-              Regenerate
+              {t('admin.regenerate')}
             </Button>
           </div>
         </div>
@@ -439,12 +443,11 @@ const TableManagementPage: React.FC = () => {
       <Modal
         open={!!confirmCloseSession}
         onClose={() => setConfirmCloseSession(null)}
-        title="Close Session?"
+        title={t('admin.close_session_title')}
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-gray-600">
-            This will end the session for all participants at this table.
-            Any unplaced items in the cart will be lost.
+            {t('admin.close_session_warning')}
           </p>
           <div className="flex gap-2 justify-end">
             <Button
@@ -462,7 +465,7 @@ const TableManagementPage: React.FC = () => {
                 if (confirmCloseSession) closeMutation.mutate(confirmCloseSession);
               }}
             >
-              Close Session
+              {t('admin.close_session')}
             </Button>
           </div>
         </div>

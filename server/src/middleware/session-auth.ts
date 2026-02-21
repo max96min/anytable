@@ -12,12 +12,10 @@ export async function sessionAuth(
   next: NextFunction
 ): Promise<void> {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = req.headers['x-session-token'] as string | undefined;
+    if (!token) {
       throw AppError.unauthorized('Missing or invalid session token');
     }
-
-    const token = authHeader.slice(7);
     const match = token.match(
       /^session:([0-9a-f-]{36}):participant:([0-9a-f-]{36})$/
     );

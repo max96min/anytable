@@ -2,7 +2,16 @@ import crypto from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import { verifyQrToken } from './qr.service.js';
+import { normalizeShortCode, isValidShortCodeFormat } from './short-code.service.js';
 import type { StoreSettings } from '@anytable/shared';
+
+const GUEST_LABEL: Record<string, string> = {
+  en: 'Guest',
+  ko: '손님',
+  ja: 'ゲスト',
+  zh: '客人',
+  es: 'Invitado',
+};
 
 const AVATAR_COLORS = [
   '#e68119', '#e6194B', '#3cb44b', '#4363d8', '#f58231',
@@ -18,34 +27,56 @@ function generateSessionToken(sessionId: string, participantId: string): string 
 }
 
 export async function joinSession(
-  qrToken: string,
+  identifier: { qrToken?: string; shortCode?: string },
   nickname: string,
   deviceFingerprint: string,
   language: string = 'en'
 ) {
-  // 1. Verify the QR token
-  const { store_id, table_id, version } = verifyQrToken(qrToken);
+  let table;
 
-  // 2. Verify table exists and QR version matches
-  const table = await prisma.table.findUnique({
-    where: { id: table_id },
-  });
+  if (identifier.qrToken) {
+    // QR token path
+    const { store_id, table_id, version } = verifyQrToken(identifier.qrToken);
 
-  if (!table) {
-    throw AppError.notFound('Table not found', 'TABLE_NOT_FOUND');
-  }
+    table = await prisma.table.findUnique({
+      where: { id: table_id },
+    });
 
-  if (table.store_id !== store_id) {
-    throw AppError.badRequest('QR token does not match store', 'QR_STORE_MISMATCH');
-  }
+    if (!table) {
+      throw AppError.notFound('Table not found', 'TABLE_NOT_FOUND');
+    }
 
-  if (table.qr_token_version !== version) {
-    throw AppError.badRequest('QR code has been regenerated. Please scan the new code.', 'QR_VERSION_MISMATCH');
+    if (table.store_id !== store_id) {
+      throw AppError.badRequest('QR token does not match store', 'QR_STORE_MISMATCH');
+    }
+
+    if (table.qr_token_version !== version) {
+      throw AppError.badRequest('QR code has been regenerated. Please scan the new code.', 'QR_VERSION_MISMATCH');
+    }
+  } else if (identifier.shortCode) {
+    // Short code path
+    const normalized = normalizeShortCode(identifier.shortCode);
+
+    if (!isValidShortCodeFormat(normalized)) {
+      throw AppError.badRequest('Invalid table code format', 'INVALID_SHORT_CODE');
+    }
+
+    table = await prisma.table.findUnique({
+      where: { short_code: normalized },
+    });
+
+    if (!table) {
+      throw AppError.notFound('Table not found. Please check the code and try again.', 'TABLE_NOT_FOUND');
+    }
+  } else {
+    throw AppError.badRequest('Either QR token or table code is required', 'MISSING_IDENTIFIER');
   }
 
   if (table.status !== 'ACTIVE') {
     throw AppError.badRequest('This table is currently inactive', 'TABLE_INACTIVE');
   }
+
+  const store_id = table.store_id;
 
   // 3. Get store with settings
   const store = await prisma.store.findUnique({
@@ -53,6 +84,7 @@ export async function joinSession(
     select: {
       id: true,
       name: true,
+      logo_url: true,
       address: true,
       phone: true,
       default_language: true,
@@ -71,11 +103,13 @@ export async function joinSession(
   const fingerprintHash = hashFingerprint(deviceFingerprint);
 
   // 4. Find or create session + participant in a transaction
+  const needsAutoNickname = !nickname;
+
   const result = await prisma.$transaction(async (tx) => {
     // Find existing OPEN session for this table
     let session = await tx.tableSession.findFirst({
       where: {
-        table_id: table_id,
+        table_id: table.id,
         status: 'OPEN',
       },
     });
@@ -88,7 +122,7 @@ export async function joinSession(
       session = await tx.tableSession.create({
         data: {
           store_id,
-          table_id,
+          table_id: table.id,
           status: 'OPEN',
           current_round_no: 0,
           participants_count: 0,
@@ -109,23 +143,31 @@ export async function joinSession(
 
     if (participant) {
       // Update last seen and potentially nickname/language
+      const updateData: Record<string, unknown> = {
+        language,
+        last_seen_at: new Date(),
+      };
+      // Only update nickname if user explicitly provided one
+      if (nickname) {
+        updateData.nickname = nickname;
+      }
       participant = await tx.participant.update({
         where: { id: participant.id },
-        data: {
-          nickname,
-          language,
-          last_seen_at: new Date(),
-        },
+        data: updateData,
       });
     } else {
       // Determine role: first participant is HOST
       const role = isNewSession ? 'HOST' : 'GUEST';
       const avatarColor = AVATAR_COLORS[session.participants_count % AVATAR_COLORS.length];
 
+      // Auto-generate nickname if not provided: 손님 1, Guest 1, ...
+      const guestLabel = GUEST_LABEL[language] || GUEST_LABEL.en;
+      const resolvedNickname = nickname || `${guestLabel} ${session.participants_count + 1}`;
+
       participant = await tx.participant.create({
         data: {
           session_id: session.id,
-          nickname,
+          nickname: resolvedNickname,
           device_fingerprint_hash: fingerprintHash,
           role,
           avatar_color: avatarColor,
@@ -191,6 +233,7 @@ export async function joinSession(
     store: {
       id: store.id,
       name: store.name,
+      logo_url: store.logo_url ?? undefined,
       address: store.address ?? undefined,
       phone: store.phone ?? undefined,
       default_language: store.default_language,

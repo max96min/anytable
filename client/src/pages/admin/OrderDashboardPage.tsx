@@ -21,14 +21,7 @@ const FILTER_TO_STATUSES: Record<FilterTab, OrderStatus[]> = {
   SERVED: ['SERVED'],
 };
 
-function elapsedString(placedAt: string): string {
-  const diff = Date.now() - new Date(placedAt).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  return `${hrs}h ${mins % 60}m ago`;
-}
+// elapsedString is now inside the component to access t()
 
 function elapsedMinutes(placedAt: string): number {
   return Math.floor((Date.now() - new Date(placedAt).getTime()) / 60_000);
@@ -37,6 +30,15 @@ function elapsedMinutes(placedAt: string): number {
 const OrderDashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const { owner, accessToken } = useAdminAuth();
+
+  const elapsedString = (placedAt: string): string => {
+    const diff = Date.now() - new Date(placedAt).getTime();
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 1) return t('admin.just_now');
+    if (mins < 60) return t('admin.minutes_ago', { count: mins });
+    const hrs = Math.floor(mins / 60);
+    return t('admin.hours_minutes_ago', { hours: hrs, minutes: mins % 60 });
+  };
   const queryClient = useQueryClient();
   const socketRef = useRef<Socket | null>(null);
 
@@ -195,7 +197,7 @@ const OrderDashboardPage: React.FC = () => {
             onClick={() => handleStatusChange(order.id, 'PREPARING')}
             loading={statusMutation.isPending && statusMutation.variables?.orderId === order.id}
           >
-            Start Preparing
+            {t('admin.start_preparing')}
           </Button>
         );
       case 'PREPARING':
@@ -227,7 +229,7 @@ const OrderDashboardPage: React.FC = () => {
             onClick={() => handleStatusChange(order.id, 'SERVED')}
             loading={statusMutation.isPending && statusMutation.variables?.orderId === order.id}
           >
-            Mark Served
+            {t('admin.mark_served')}
           </Button>
         );
       default:
@@ -244,10 +246,10 @@ const OrderDashboardPage: React.FC = () => {
 
   const lastUpdatedStr = useMemo(() => {
     const diff = Date.now() - lastUpdated.getTime();
-    if (diff < 60_000) return 'Just now';
+    if (diff < 60_000) return t('admin.just_now');
     const mins = Math.floor(diff / 60_000);
-    return `${mins}m ago`;
-  }, [lastUpdated, /* eslint-disable-line react-hooks/exhaustive-deps */ orders]);
+    return t('admin.minutes_ago', { count: mins });
+  }, [lastUpdated, /* eslint-disable-line react-hooks/exhaustive-deps */ orders, t]);
 
   return (
     <div className="flex flex-col min-h-full">
@@ -261,10 +263,10 @@ const OrderDashboardPage: React.FC = () => {
             <div className="flex items-center gap-2 mt-0.5">
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-xs text-green-600 font-medium">Live</span>
+                <span className="text-xs text-green-600 font-medium">{t('admin.live_status')}</span>
               </span>
               <span className="text-xs text-gray-400">
-                {activeTables} Tables Active
+                {t('admin.tables_active', { count: activeTables })}
               </span>
             </div>
           </div>
@@ -291,7 +293,7 @@ const OrderDashboardPage: React.FC = () => {
               <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by table, item name..."
+                placeholder={t('admin.search_orders_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -351,15 +353,15 @@ const OrderDashboardPage: React.FC = () => {
       <div className="px-4 md:px-6 py-3 flex items-center justify-between">
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
           {activeTab === 'PLACED'
-            ? 'Incoming Orders'
+            ? t('admin.incoming_orders')
             : activeTab === 'PREPARING'
-              ? 'In Kitchen'
+              ? t('admin.in_kitchen')
               : activeTab === 'READY'
-                ? 'Ready to Serve'
-                : 'Completed Today'}
+                ? t('admin.ready_to_serve')
+                : t('admin.completed_today')}
         </h2>
         <span className="text-xs text-gray-400">
-          Last updated: {lastUpdatedStr}
+          {t('admin.last_updated', { time: lastUpdatedStr })}
         </span>
       </div>
 
@@ -372,9 +374,9 @@ const OrderDashboardPage: React.FC = () => {
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Icon name="error" size={40} className="text-red-400" />
-            <p className="text-sm text-gray-500">Failed to load orders</p>
+            <p className="text-sm text-gray-500">{t('admin.failed_load_orders')}</p>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
-              Retry
+              {t('common.retry')}
             </Button>
           </div>
         ) : filteredOrders.length === 0 ? (
@@ -382,8 +384,8 @@ const OrderDashboardPage: React.FC = () => {
             <Icon name="inbox" size={48} className="text-gray-300" />
             <p className="text-sm text-gray-500">
               {searchQuery
-                ? 'No orders match your search'
-                : `No ${activeTab.toLowerCase()} orders`}
+                ? t('admin.no_orders_search')
+                : t('admin.no_status_orders', { status: activeTab.toLowerCase() })}
             </p>
           </div>
         ) : (
@@ -402,7 +404,7 @@ const OrderDashboardPage: React.FC = () => {
                         T-{order.table_number}
                       </span>
                       <Badge variant="orange" size="sm">
-                        ROUND {order.round_no}
+                        {t('admin.round_label', { number: order.round_no })}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
@@ -441,7 +443,7 @@ const OrderDashboardPage: React.FC = () => {
                                 className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
                               >
                                 <Icon name="cancel" size={16} />
-                                Cancel Order
+                                {t('admin.cancel_order')}
                               </button>
                             </div>
                           </>
@@ -507,7 +509,7 @@ const OrderDashboardPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-primary-500 animate-pulse" />
               <span className="text-sm text-white font-medium">
-                {t('admin.new_order')} at Table {toast.tableNumber}
+                {t('admin.new_order_at_table', { label: t('admin.new_order'), number: toast.tableNumber })}
               </span>
             </div>
             <button
@@ -517,7 +519,7 @@ const OrderDashboardPage: React.FC = () => {
               }}
               className="text-sm font-bold text-primary-400 hover:text-primary-300 transition-colors px-2"
             >
-              VIEW
+              {t('admin.view')}
             </button>
           </div>
         </div>

@@ -2,7 +2,7 @@ import 'dotenv/config';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../src/lib/prisma.js';
-import { generateQrToken } from './seed-utils.js';
+import { generateQrToken, generateShortCode } from './seed-utils.js';
 
 // ---------------------------------------------------------------------------
 // Types for locale data
@@ -1354,7 +1354,21 @@ async function main() {
   await prisma.table.deleteMany();
   await prisma.store.deleteMany();
   await prisma.owner.deleteMany();
+  await prisma.systemAdmin.deleteMany();
   console.log('[Seed] Cleared all existing data.\n');
+
+  // ------------------------------------------------------------------
+  // 1.5 Create system admin
+  // ------------------------------------------------------------------
+  const systemPasswordHash = await bcrypt.hash('system123', 12);
+  const systemAdmin = await prisma.systemAdmin.create({
+    data: {
+      email: 'system@anytable.com',
+      password_hash: systemPasswordHash,
+      name: 'System Admin',
+    },
+  });
+  console.log(`[Seed] Created system admin: ${systemAdmin.email} (${systemAdmin.id})`);
 
   // ------------------------------------------------------------------
   // 2. Create owner
@@ -1396,9 +1410,15 @@ async function main() {
   // 4. Create 12 tables with QR tokens
   // ------------------------------------------------------------------
   const tables = [];
+  const usedShortCodes = new Set<string>();
   for (let i = 1; i <= 12; i++) {
     const tableId = crypto.randomUUID();
     const qrToken = generateQrToken(store.id, tableId, 1);
+    let shortCode = generateShortCode();
+    while (usedShortCodes.has(shortCode)) {
+      shortCode = generateShortCode();
+    }
+    usedShortCodes.add(shortCode);
 
     const table = await prisma.table.create({
       data: {
@@ -1410,11 +1430,15 @@ async function main() {
         status: 'ACTIVE',
         qr_token: qrToken,
         qr_token_version: 1,
+        short_code: shortCode,
       },
     });
     tables.push(table);
   }
   console.log(`[Seed] Created ${tables.length} tables.`);
+  for (const t of tables) {
+    console.log(`  Table ${t.table_number}: code=${t.short_code}`);
+  }
 
   // ------------------------------------------------------------------
   // 5. Create categories

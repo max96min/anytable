@@ -7,11 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model SystemAdmin {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password_hash String
+  name          String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+}
+
 model Owner {
   id            String   @id @default(uuid())
   email         String   @unique
   password_hash String
   name          String
+  is_active     Boolean  @default(true)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
   stores        Store[]
@@ -22,6 +32,7 @@ model Store {
   owner_id            String
   owner               Owner    @relation(fields: [owner_id], references: [id])
   name                String
+  logo_url            String?
   address             String?
   phone               String?
   default_language    String   @default("en")
@@ -48,6 +59,7 @@ model Table {
   status           String   @default("ACTIVE")
   qr_token         String   @unique
   qr_token_version Int      @default(1)
+  short_code       String   @unique
   created_at       DateTime @default(now())
   updated_at       DateTime @updatedAt
 

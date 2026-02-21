@@ -23,6 +23,11 @@ export interface SessionContextValue extends SessionState {
     nickname: string,
     deviceFingerprint: string,
   ) => Promise<JoinSessionResponse>;
+  joinSessionByCode: (
+    shortCode: string,
+    nickname: string,
+    deviceFingerprint: string,
+  ) => Promise<JoinSessionResponse>;
   leaveSession: () => void;
   isInSession: boolean;
 }
@@ -96,6 +101,36 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [],
   );
 
+  const joinSessionByCode = useCallback(
+    async (
+      shortCode: string,
+      nickname: string,
+      deviceFingerprint: string,
+    ): Promise<JoinSessionResponse> => {
+      const response = await api.post<JoinSessionResponse>(
+        '/api/public/table-sessions/join',
+        {
+          short_code: shortCode,
+          nickname,
+          device_fingerprint: deviceFingerprint,
+          language: i18n.language as SupportedLanguage,
+        },
+      );
+
+      const newState: SessionState = {
+        session: response.session,
+        participant: response.participant,
+        sessionToken: response.session_token,
+        store: response.store,
+        cartId: response.cart_id,
+      };
+
+      setState(newState);
+      return response;
+    },
+    [],
+  );
+
   const leaveSession = useCallback(() => {
     const emptyState: SessionState = {
       session: null,
@@ -116,6 +151,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         ...state,
         joinSession,
+        joinSessionByCode,
         leaveSession,
         isInSession,
       }}

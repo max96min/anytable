@@ -28,7 +28,7 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     if (!email.trim() || !password.trim()) {
-      setError('Please enter both email and password.');
+      setError(t('admin.login_validation'));
       return;
     }
 
@@ -37,7 +37,7 @@ const LoginPage: React.FC = () => {
       await login(email.trim(), password);
       navigate('/admin/orders', { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Invalid credentials. Please try again.';
+      const message = err instanceof Error ? err.message : t('admin.login_error');
       setError(message);
     } finally {
       setLoading(false);
@@ -53,7 +53,7 @@ const LoginPage: React.FC = () => {
             <Icon name="restaurant" size={30} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-surface-dark">AnyTable</h1>
-          <p className="text-sm text-gray-500 mt-1">Store Owner Login</p>
+          <p className="text-sm text-gray-500 mt-1">{t('admin.login_subtitle')}</p>
         </div>
 
         {/* Login Card */}
@@ -63,7 +63,7 @@ const LoginPage: React.FC = () => {
               label={t('admin.email')}
               icon="mail"
               type="email"
-              placeholder="owner@restaurant.com"
+              placeholder={t('admin.email_placeholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
@@ -74,7 +74,7 @@ const LoginPage: React.FC = () => {
               label={t('admin.password')}
               icon="lock"
               type="password"
-              placeholder="Enter your password"
+              placeholder={t('admin.password_placeholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -95,13 +95,13 @@ const LoginPage: React.FC = () => {
               loading={loading}
               className="mt-2"
             >
-              Sign In
+              {t('admin.sign_in')}
             </Button>
           </form>
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          AnyTable Admin Panel
+          {t('admin.panel_footer')}
         </p>
       </div>
     </div>

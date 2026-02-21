@@ -5,3 +5,12 @@ dist/
 *.log
 .DS_Store
 coverage/
+uploads/
+server/uploads/
+stitch_anytable_v1/
+.claude/
+*.d.ts.map
+server/prisma/*.js
+server/prisma/*.js.map
+server/prisma/*.d.ts
+server/prisma/*.d.ts.map

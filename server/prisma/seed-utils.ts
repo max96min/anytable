@@ -1,5 +1,17 @@
 import crypto from 'crypto';
 
+const SHORT_CODE_CHARSET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+const SHORT_CODE_LENGTH = 6;
+
+export function generateShortCode(): string {
+  const bytes = crypto.randomBytes(SHORT_CODE_LENGTH);
+  let code = '';
+  for (let i = 0; i < SHORT_CODE_LENGTH; i++) {
+    code += SHORT_CODE_CHARSET[bytes[i] % SHORT_CODE_CHARSET.length];
+  }
+  return code;
+}
+
 /**
  * Generate a QR token using HMAC-SHA256.
  *

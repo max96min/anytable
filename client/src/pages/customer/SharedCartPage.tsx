@@ -81,7 +81,7 @@ const SharedCartPage: React.FC = () => {
         cart_version: cart.version,
         idempotency_key: `${session.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       };
-      await api.post('/api/public/orders', request);
+      await api.post(`/api/public/sessions/${session.id}/orders`, request);
       toast.success(t('cart.place_order'));
       navigate('/status', { replace: true });
     } catch {

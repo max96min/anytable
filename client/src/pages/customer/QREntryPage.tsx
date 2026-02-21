@@ -6,39 +6,20 @@ import Input from '@/components/ui/Input';
 import Icon from '@/components/ui/Icon';
 import Card from '@/components/ui/Card';
 import useSession from '@/hooks/useSession';
-
-function generateFingerprint(): string {
-  const nav = window.navigator;
-  const screen = window.screen;
-  const raw = [
-    nav.userAgent,
-    nav.language,
-    screen.width,
-    screen.height,
-    screen.colorDepth,
-    new Date().getTimezoneOffset(),
-  ].join('|');
-  let hash = 0;
-  for (let i = 0; i < raw.length; i++) {
-    const char = raw.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(36);
-}
+import { generateFingerprint } from '@/lib/fingerprint';
 
 const QREntryPage: React.FC = () => {
   const { qrToken } = useParams<{ qrToken: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { joinSession, isInSession } = useSession();
+  const { joinSession, isInSession, store } = useSession();
 
   const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleJoin = async () => {
-    if (!qrToken || !nickname.trim()) return;
+    if (!qrToken) return;
 
     setLoading(true);
     setError(null);
@@ -64,10 +45,14 @@ const QREntryPage: React.FC = () => {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-500 mb-4">
-            <Icon name="restaurant" size={32} className="text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-surface-dark">AnyTable</h1>
+          {store?.logo_url ? (
+            <img src={store.logo_url} alt={store.name} className="w-16 h-16 rounded-2xl object-cover mx-auto mb-4" />
+          ) : (
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-500 mb-4">
+              <Icon name="restaurant" size={32} className="text-white" />
+            </div>
+          )}
+          <h1 className="text-2xl font-bold text-surface-dark">{store?.name || 'AnyTable'}</h1>
           <p className="text-sm text-gray-500 mt-1">
             {t('session.scan_qr')}
           </p>
@@ -106,8 +91,8 @@ const QREntryPage: React.FC = () => {
           ) : (
             <div className="space-y-4">
               <Input
-                label={t('session.enter_nickname')}
-                placeholder={t('session.nickname_placeholder')}
+                label={t('session.enter_nickname_optional')}
+                placeholder={t('session.nickname_placeholder_optional')}
                 icon="person"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
@@ -124,7 +109,7 @@ const QREntryPage: React.FC = () => {
                 size="lg"
                 icon="login"
                 loading={loading}
-                disabled={!nickname.trim() || !qrToken}
+                disabled={!qrToken}
                 onClick={handleJoin}
               >
                 {loading ? t('session.joining') : t('session.join_session')}

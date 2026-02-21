@@ -95,10 +95,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
 
       try {
-        const data = await api.post<SharedCartDTO>(`/api/public/carts/${cartId}/items`, {
+        const data = await api.post<SharedCartDTO>(`/api/public/carts/${cartId}/mutations`, {
           ...body,
           participant_id: participantId,
-          cart_version: cart?.version ?? 0,
+          cart_version: cart?.version ?? 1,
         });
         setCart(data);
       } catch (err) {
@@ -149,6 +149,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     },
     [mutateCart],
   );
+
+  // Auto-fetch cart when session exists
+  useEffect(() => {
+    const cartId = getCartId();
+    if (cartId && !cart) {
+      fetchCart();
+    }
+  }, [getCartId, cart, fetchCart]);
 
   // Socket connection for real-time cart updates
   useEffect(() => {

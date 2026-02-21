@@ -8,5 +8,7 @@ declare namespace Express {
     session_id?: string;
     /** Set by session-auth middleware */
     participant_id?: string;
+    /** Set by system-auth middleware */
+    system_admin_id?: string;
   }
 }

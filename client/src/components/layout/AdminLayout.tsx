@@ -1,31 +1,34 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../ui';
 import AdminBottomNav from './AdminBottomNav';
 
 interface SidebarItem {
   to: string;
   icon: string;
-  label: string;
+  i18nKey: string;
 }
 
 const sidebarItems: SidebarItem[] = [
-  { to: '/admin/orders', icon: 'receipt_long', label: 'Orders' },
-  { to: '/admin/tables', icon: 'table_restaurant', label: 'Tables' },
-  { to: '/admin/menu', icon: 'menu_book', label: 'Menu' },
-  { to: '/admin/analytics', icon: 'analytics', label: 'Analytics' },
-  { to: '/admin/settings', icon: 'settings', label: 'Admin' },
+  { to: '/admin/orders', icon: 'receipt_long', i18nKey: 'admin.orders' },
+  { to: '/admin/tables', icon: 'table_restaurant', i18nKey: 'admin.tables' },
+  { to: '/admin/menu', icon: 'menu_book', i18nKey: 'admin.menu' },
+  { to: '/admin/analytics', icon: 'analytics', i18nKey: 'admin.analytics' },
+  { to: '/admin/settings', icon: 'settings', i18nKey: 'admin.nav_settings' },
 ];
 
 const AdminLayout: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-surface-light">
       {/* Desktop/tablet sidebar - hidden on mobile */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 w-56 flex-col bg-white border-r border-gray-100 z-30">
         {/* Brand */}
         <div className="flex items-center gap-2 px-5 h-16 border-b border-gray-100">
-          <span className="text-lg font-bold text-primary-500">AnyTable</span>
-          <span className="text-xs text-gray-400 font-medium">Admin</span>
+          <span className="text-lg font-bold text-primary-500">{t('admin.brand_name')}</span>
+          <span className="text-xs text-gray-400 font-medium">{t('admin.brand_admin')}</span>
         </div>
 
         {/* Nav links */}
@@ -45,7 +48,7 @@ const AdminLayout: React.FC = () => {
               {({ isActive }) => (
                 <>
                   <Icon name={item.icon} size={20} filled={isActive} />
-                  <span>{item.label}</span>
+                  <span>{t(item.i18nKey)}</span>
                 </>
               )}
             </NavLink>

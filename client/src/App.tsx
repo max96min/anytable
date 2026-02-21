@@ -1,19 +1,23 @@
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { SessionProvider } from '@/context/SessionContext';
 import { CartProvider } from '@/context/CartContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { SocketProvider } from '@/context/SocketContext';
 import { AdminAuthProvider } from '@/context/AdminAuthContext';
-import { CustomerLayout, AdminLayout } from '@/components/layout';
+import { SystemAuthProvider } from '@/context/SystemAuthContext';
+import { CustomerLayout, AdminLayout, SystemLayout } from '@/components/layout';
 import Spinner from '@/components/ui/Spinner';
 import useSession from '@/hooks/useSession';
 
 // Customer pages
 const QREntryPage = lazy(() => import('@/pages/customer/QREntryPage'));
+const ShortCodeEntryPage = lazy(() => import('@/pages/customer/ShortCodeEntryPage'));
 const MenuBrowsingPage = lazy(() => import('@/pages/customer/MenuBrowsingPage'));
 const MenuDetailPage = lazy(() => import('@/pages/customer/MenuDetailPage'));
 const AllergenFilterPage = lazy(() => import('@/pages/customer/AllergenFilterPage'));
+const ProfilePage = lazy(() => import('@/pages/customer/ProfilePage'));
 const SharedCartPage = lazy(() => import('@/pages/customer/SharedCartPage'));
 const OrderStatusPage = lazy(() => import('@/pages/customer/OrderStatusPage'));
 const OrderSummaryPage = lazy(() => import('@/pages/customer/OrderSummaryPage'));
@@ -26,6 +30,14 @@ const MenuManagementPage = lazy(() => import('@/pages/admin/MenuManagementPage')
 const MenuEditorPage = lazy(() => import('@/pages/admin/MenuEditorPage'));
 const TranslationEditorPage = lazy(() => import('@/pages/admin/TranslationEditorPage'));
 const AnalyticsDashboardPage = lazy(() => import('@/pages/admin/AnalyticsDashboardPage'));
+const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
+
+// System pages
+const SystemLoginPage = lazy(() => import('@/pages/system/LoginPage'));
+const SystemDashboardPage = lazy(() => import('@/pages/system/DashboardPage'));
+const SystemStoreListPage = lazy(() => import('@/pages/system/StoreListPage'));
+const SystemStoreDetailPage = lazy(() => import('@/pages/system/StoreDetailPage'));
+const SystemOwnerListPage = lazy(() => import('@/pages/system/OwnerListPage'));
 
 const LoadingFallback: React.FC = () => (
   <div className="flex items-center justify-center h-screen bg-surface-light">
@@ -35,6 +47,8 @@ const LoadingFallback: React.FC = () => (
 
 const RootRedirect: React.FC = () => {
   const { isInSession } = useSession();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
   if (isInSession) {
     return <Navigate to="/menu" replace />;
@@ -46,9 +60,16 @@ const RootRedirect: React.FC = () => {
         <span className="material-symbols-outlined text-white text-3xl">restaurant</span>
       </div>
       <h1 className="text-2xl font-bold text-surface-dark mb-2">AnyTable</h1>
-      <p className="text-sm text-gray-500 text-center max-w-xs">
-        Scan the QR code on your table to start ordering
+      <p className="text-sm text-gray-500 text-center max-w-xs mb-6">
+        {t('session.scan_qr')}
       </p>
+      <button
+        onClick={() => navigate('/code')}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+      >
+        <span className="material-symbols-outlined text-lg">dialpad</span>
+        {t('session.enter_table_code')}
+      </button>
     </div>
   );
 };
@@ -68,16 +89,18 @@ const AppRoutes: React.FC = () => {
       <Routes>
         {/* QR Entry */}
         <Route path="/t/:qrToken" element={<QREntryPage />} />
+        <Route path="/code" element={<ShortCodeEntryPage />} />
 
         {/* Customer routes with bottom nav */}
         <Route element={<CustomerLayout />}>
           <Route path="/menu" element={<MenuBrowsingPage />} />
           <Route path="/cart" element={<SharedCartPage />} />
           <Route path="/status" element={<OrderStatusPage />} />
-          <Route path="/preferences" element={<AllergenFilterPage />} />
+          <Route path="/preferences" element={<ProfilePage />} />
         </Route>
 
         {/* Customer routes without bottom nav */}
+        <Route path="/preferences/allergens" element={<AllergenFilterPage />} />
         <Route path="/menu/:menuId" element={<MenuDetailPage />} />
         <Route path="/summary" element={<OrderSummaryPage />} />
 
@@ -91,6 +114,17 @@ const AppRoutes: React.FC = () => {
           <Route path="menu/:menuId" element={<MenuEditorPage />} />
           <Route path="menu/:menuId/translations" element={<TranslationEditorPage />} />
           <Route path="analytics" element={<AnalyticsDashboardPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+
+        {/* System routes */}
+        <Route path="/system/login" element={<SystemLoginPage />} />
+        <Route path="/system" element={<SystemLayout />}>
+          <Route index element={<Navigate to="/system/dashboard" replace />} />
+          <Route path="dashboard" element={<SystemDashboardPage />} />
+          <Route path="stores" element={<SystemStoreListPage />} />
+          <Route path="stores/:storeId" element={<SystemStoreDetailPage />} />
+          <Route path="owners" element={<SystemOwnerListPage />} />
         </Route>
 
         {/* Root & fallback */}
@@ -107,9 +141,11 @@ const App: React.FC = () => {
       <SessionProvider>
         <CartProvider>
           <AdminAuthProvider>
-            <SocketWrapper>
-              <AppRoutes />
-            </SocketWrapper>
+            <SystemAuthProvider>
+              <SocketWrapper>
+                <AppRoutes />
+              </SocketWrapper>
+            </SystemAuthProvider>
           </AdminAuthProvider>
         </CartProvider>
       </SessionProvider>

@@ -76,7 +76,7 @@ const AnalyticsDashboardPage: React.FC = () => {
       <div className="bg-white border-b border-gray-200 px-4 py-4 md:px-6">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold text-surface-dark">
-            {t('admin.analytics')} Dashboard
+            {t('admin.analytics_dashboard')}
           </h1>
           <button
             onClick={() => refetch()}
@@ -91,12 +91,12 @@ const AnalyticsDashboardPage: React.FC = () => {
         {isError ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Icon name="error" size={40} className="text-red-400" />
-            <p className="text-sm text-gray-500">Failed to load analytics</p>
+            <p className="text-sm text-gray-500">{t('admin.failed_load_analytics')}</p>
             <button
               onClick={() => refetch()}
               className="text-sm text-primary-500 font-medium"
             >
-              Retry
+              {t('common.retry')}
             </button>
           </div>
         ) : (
@@ -105,28 +105,28 @@ const AnalyticsDashboardPage: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <StatCard
                 icon="receipt_long"
-                label="Today's Orders"
+                label={t('admin.todays_orders')}
                 value={String(stats.today_orders)}
                 iconBg="bg-primary-50"
                 iconColor="text-primary-500"
               />
               <StatCard
                 icon="payments"
-                label="Today's Revenue"
+                label={t('admin.todays_revenue')}
                 value={formatPrice(stats.today_revenue)}
                 iconBg="bg-green-50"
                 iconColor="text-green-600"
               />
               <StatCard
                 icon="table_restaurant"
-                label="Active Tables"
+                label={t('admin.active_tables')}
                 value={String(stats.active_tables)}
                 iconBg="bg-blue-50"
                 iconColor="text-blue-600"
               />
               <StatCard
                 icon="trending_up"
-                label="Avg Order Value"
+                label={t('admin.avg_order_value')}
                 value={formatPrice(stats.avg_order_value)}
                 iconBg="bg-purple-50"
                 iconColor="text-purple-600"
@@ -140,11 +140,10 @@ const AnalyticsDashboardPage: React.FC = () => {
                   <Icon name="bar_chart" size={32} className="text-gray-400" />
                 </div>
                 <h3 className="text-base font-semibold text-surface-dark">
-                  Charts Coming Soon
+                  {t('admin.charts_coming_soon')}
                 </h3>
                 <p className="text-sm text-gray-500 text-center max-w-sm">
-                  Revenue trends, order volume by hour, and other chart visualizations
-                  will be available here in a future update.
+                  {t('admin.charts_coming_soon_desc')}
                 </p>
               </div>
             </Card>
@@ -153,10 +152,10 @@ const AnalyticsDashboardPage: React.FC = () => {
             <Card padding="lg">
               <h3 className="text-sm font-semibold text-surface-dark mb-4 flex items-center gap-2">
                 <Icon name="translate" size={18} className="text-gray-500" />
-                Language Distribution
+                {t('admin.language_distribution')}
               </h3>
               {langEntries.length === 0 ? (
-                <p className="text-sm text-gray-400">No session data yet</p>
+                <p className="text-sm text-gray-400">{t('admin.no_session_data')}</p>
               ) : (
                 <div className="flex flex-col gap-3">
                   {langEntries
@@ -188,10 +187,10 @@ const AnalyticsDashboardPage: React.FC = () => {
             <Card padding="lg">
               <h3 className="text-sm font-semibold text-surface-dark mb-4 flex items-center gap-2">
                 <Icon name="local_fire_department" size={18} className="text-primary-500" />
-                Popular Items
+                {t('admin.popular_items')}
               </h3>
               {stats.popular_items.length === 0 ? (
-                <p className="text-sm text-gray-400">No order data yet</p>
+                <p className="text-sm text-gray-400">{t('admin.no_order_data')}</p>
               ) : (
                 <div className="flex flex-col">
                   {stats.popular_items.slice(0, 5).map((item, idx) => (
@@ -216,7 +215,7 @@ const AnalyticsDashboardPage: React.FC = () => {
                         {item.name}
                       </span>
                       <span className="text-sm text-gray-500">
-                        {item.order_count} orders
+                        {t('admin.order_count', { count: item.order_count })}
                       </span>
                     </div>
                   ))}

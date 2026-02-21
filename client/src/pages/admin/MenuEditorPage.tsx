@@ -11,6 +11,7 @@ import Icon from '@/components/ui/Icon';
 import Card from '@/components/ui/Card';
 import Toggle from '@/components/ui/Toggle';
 import Spinner from '@/components/ui/Spinner';
+import ImagePicker from '@/components/admin/ImagePicker';
 
 interface OptionValueForm {
   tempId: string;
@@ -33,8 +34,9 @@ function generateTempId(): string {
 const MenuEditorPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-  const isEditing = !!id;
+  const { menuId } = useParams<{ menuId: string }>();
+  const isEditing = !!menuId && menuId !== 'new';
+  const id = isEditing ? menuId : undefined;
   const queryClient = useQueryClient();
 
   // Form state
@@ -113,7 +115,7 @@ const MenuEditorPage: React.FC = () => {
       if (isEditing && id) {
         queryClient.invalidateQueries({ queryKey: ['admin-menu', id] });
       }
-      navigate('/admin/menus');
+      navigate('/admin/menu');
     },
   });
 
@@ -251,13 +253,13 @@ const MenuEditorPage: React.FC = () => {
       <div className="bg-white border-b border-gray-200 px-4 py-4 md:px-6">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/admin/menus')}
+            onClick={() => navigate('/admin/menu')}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <Icon name="arrow_back" size={22} className="text-gray-600" />
           </button>
           <h1 className="text-lg font-bold text-surface-dark">
-            {isEditing ? 'Edit Menu Item' : 'New Menu Item'}
+            {isEditing ? t('admin.edit_menu_item') : t('admin.new_menu_item')}
           </h1>
         </div>
       </div>
@@ -267,13 +269,13 @@ const MenuEditorPage: React.FC = () => {
         <div className="flex flex-col gap-5">
           {/* Category */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">Category</label>
+            <label className="text-sm font-medium text-gray-700">{t('admin.category')}</label>
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="">Select a category</option>
+              <option value="">{t('admin.select_category')}</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {getCategoryName(cat)}
@@ -284,17 +286,17 @@ const MenuEditorPage: React.FC = () => {
 
           {/* Name */}
           <Input
-            label="Menu Name (English)"
-            placeholder="e.g., Carbonara Pasta"
+            label={t('admin.menu_name_en')}
+            placeholder={t('admin.menu_name_placeholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
 
           {/* Description */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">Description (English)</label>
+            <label className="text-sm font-medium text-gray-700">{t('admin.description_en')}</label>
             <textarea
-              placeholder="Describe this dish..."
+              placeholder={t('admin.description_placeholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -304,29 +306,27 @@ const MenuEditorPage: React.FC = () => {
 
           {/* Price */}
           <Input
-            label="Base Price (cents)"
+            label={t('admin.base_price')}
             type="number"
             min={0}
             step={1}
-            placeholder="e.g., 1200 for $12.00"
+            placeholder={t('admin.base_price_placeholder')}
             value={basePrice}
             onChange={(e) => setBasePrice(e.target.value)}
             icon="attach_money"
           />
 
-          {/* Image URL */}
-          <Input
-            label="Image URL"
-            type="url"
-            placeholder="https://example.com/image.jpg"
+          {/* Image */}
+          <ImagePicker
             value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            icon="image"
+            onChange={setImageUrl}
+            menuName={name}
+            menuDescription={description}
           />
 
           {/* Dietary tags */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700">Dietary Tags</label>
+            <label className="text-sm font-medium text-gray-700">{t('admin.dietary_tags')}</label>
             <div className="flex flex-wrap gap-2">
               {DIETARY_TAGS.map((tag) => (
                 <button
@@ -347,7 +347,7 @@ const MenuEditorPage: React.FC = () => {
 
           {/* Allergens */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700">Allergens</label>
+            <label className="text-sm font-medium text-gray-700">{t('admin.allergens_label')}</label>
             <div className="flex flex-wrap gap-2">
               {ALLERGEN_LIST.map((allergen) => (
                 <button
@@ -369,7 +369,7 @@ const MenuEditorPage: React.FC = () => {
           {/* Spiciness level */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700">
-              Spiciness Level: {spicinessLevel}/5
+              {t('admin.spiciness_level', { level: spicinessLevel })}
             </label>
             <input
               type="range"
@@ -381,19 +381,19 @@ const MenuEditorPage: React.FC = () => {
               className="w-full accent-primary-500"
             />
             <div className="flex justify-between text-[10px] text-gray-400 px-1">
-              <span>None</span>
-              <span>Mild</span>
-              <span>Medium</span>
-              <span>Hot</span>
-              <span>Very Hot</span>
-              <span>Extreme</span>
+              <span>{t('admin.spiciness_none')}</span>
+              <span>{t('admin.spiciness_mild')}</span>
+              <span>{t('admin.spiciness_medium')}</span>
+              <span>{t('admin.spiciness_hot')}</span>
+              <span>{t('admin.spiciness_very_hot')}</span>
+              <span>{t('admin.spiciness_extreme')}</span>
             </div>
           </div>
 
           {/* Challenge level */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700">
-              Challenge Level: {challengeLevel}/5
+              {t('admin.challenge_level', { level: challengeLevel })}
             </label>
             <input
               type="range"
@@ -405,12 +405,12 @@ const MenuEditorPage: React.FC = () => {
               className="w-full accent-primary-500"
             />
             <div className="flex justify-between text-[10px] text-gray-400 px-1">
-              <span>None</span>
-              <span>Easy</span>
-              <span>Moderate</span>
-              <span>Adventurous</span>
-              <span>Brave</span>
-              <span>Expert</span>
+              <span>{t('admin.challenge_none')}</span>
+              <span>{t('admin.challenge_easy')}</span>
+              <span>{t('admin.challenge_moderate')}</span>
+              <span>{t('admin.challenge_adventurous')}</span>
+              <span>{t('admin.challenge_brave')}</span>
+              <span>{t('admin.challenge_expert')}</span>
             </div>
           </div>
 
@@ -418,20 +418,20 @@ const MenuEditorPage: React.FC = () => {
           <Toggle
             checked={isRecommended}
             onChange={setIsRecommended}
-            label="Is Recommended"
+            label={t('admin.is_recommended')}
           />
 
           {/* Option Groups */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">Option Groups</label>
+              <label className="text-sm font-medium text-gray-700">{t('admin.option_groups')}</label>
               <Button
                 variant="ghost"
                 size="sm"
                 icon="add"
                 onClick={addOptionGroup}
               >
-                Add Group
+                {t('admin.add_group')}
               </Button>
             </div>
 
@@ -441,8 +441,8 @@ const MenuEditorPage: React.FC = () => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <Input
-                        label="Group Name"
-                        placeholder="e.g., Size, Toppings"
+                        label={t('admin.group_name')}
+                        placeholder={t('admin.group_name_placeholder')}
                         value={group.group_name}
                         onChange={(e) =>
                           updateOptionGroup(group.tempId, 'group_name', e.target.value)
@@ -463,10 +463,10 @@ const MenuEditorPage: React.FC = () => {
                       onChange={(checked) =>
                         updateOptionGroup(group.tempId, 'is_required', checked)
                       }
-                      label="Required"
+                      label={t('admin.required_label')}
                     />
                     <div className="flex items-center gap-2">
-                      <label className="text-xs text-gray-500">Max select:</label>
+                      <label className="text-xs text-gray-500">{t('admin.max_select')}</label>
                       <input
                         type="number"
                         min={1}
@@ -482,12 +482,12 @@ const MenuEditorPage: React.FC = () => {
 
                   {/* Option values */}
                   <div className="flex flex-col gap-2">
-                    <span className="text-xs text-gray-500 font-medium">Options:</span>
+                    <span className="text-xs text-gray-500 font-medium">{t('admin.options_label')}</span>
                     {group.values.map((val) => (
                       <div key={val.tempId} className="flex items-center gap-2">
                         <input
                           type="text"
-                          placeholder="Label (e.g., Large)"
+                          placeholder={t('admin.option_label_placeholder')}
                           value={val.label}
                           onChange={(e) =>
                             updateOptionValue(
@@ -512,7 +512,7 @@ const MenuEditorPage: React.FC = () => {
                             )
                           }
                           className="w-24 px-3 py-2 rounded-lg border border-gray-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          title="Price delta in cents"
+                          title={t('admin.price_delta_title')}
                         />
                         <button
                           onClick={() =>
@@ -529,7 +529,7 @@ const MenuEditorPage: React.FC = () => {
                       className="flex items-center gap-1 text-xs text-primary-500 font-medium hover:text-primary-600 transition-colors self-start mt-1"
                     >
                       <Icon name="add" size={14} />
-                      Add option
+                      {t('admin.add_option')}
                     </button>
                   </div>
                 </div>
@@ -544,7 +544,7 @@ const MenuEditorPage: React.FC = () => {
               <p className="text-sm text-red-600">
                 {saveMutation.error instanceof Error
                   ? saveMutation.error.message
-                  : 'Failed to save'}
+                  : t('admin.failed_save')}
               </p>
             </div>
           )}
@@ -554,7 +554,7 @@ const MenuEditorPage: React.FC = () => {
             <Button
               variant="ghost"
               size="lg"
-              onClick={() => navigate('/admin/menus')}
+              onClick={() => navigate('/admin/menu')}
             >
               {t('common.cancel')}
             </Button>
@@ -566,7 +566,7 @@ const MenuEditorPage: React.FC = () => {
               onClick={handleSave}
               disabled={!categoryId || !name.trim() || !basePrice}
             >
-              {isEditing ? 'Save Changes' : 'Create Menu Item'}
+              {isEditing ? t('admin.save_changes') : t('admin.create_menu_item')}
             </Button>
           </div>
         </div>

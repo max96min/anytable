@@ -23,3 +23,15 @@ export const adminRateLimit = rateLimit({
     code: 'RATE_LIMIT_EXCEEDED',
   },
 });
+
+export const systemRateLimit = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many requests, please try again later',
+    code: 'RATE_LIMIT_EXCEEDED',
+  },
+});

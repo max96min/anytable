@@ -1,7 +1,8 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import { errorHandler } from './middleware/error.js';
-import { publicRateLimit, adminRateLimit } from './middleware/rate-limit.js';
+import { publicRateLimit, adminRateLimit, systemRateLimit } from './middleware/rate-limit.js';
 
 // Admin routes
 import adminAuthRoutes from './routes/admin/auth.js';
@@ -11,6 +12,16 @@ import adminMenuRoutes from './routes/admin/menus.js';
 import adminTableRoutes from './routes/admin/tables.js';
 import adminOrderRoutes from './routes/admin/orders.js';
 import adminSessionRoutes from './routes/admin/sessions.js';
+import adminAnalyticsRoutes from './routes/admin/analytics.js';
+import adminImageRoutes from './routes/admin/images.js';
+
+// System routes
+import {
+  systemAuthRoutes,
+  systemStoreRoutes,
+  systemOwnerRoutes,
+  systemStatsRoutes,
+} from './routes/system/index.js';
 
 // Public routes
 import publicTableSessionRoutes from './routes/public/sessions.js';
@@ -32,9 +43,13 @@ export function createApp() {
       origin: clientUrl,
       credentials: true,
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Token'],
     })
   );
+
+  // Static file serving for uploaded images
+  const uploadDir = path.resolve(process.env.UPLOAD_DIR || 'uploads');
+  app.use('/uploads', express.static(uploadDir));
 
   // Health check
   app.get('/health', (_req, res) => {
@@ -101,6 +116,33 @@ export function createApp() {
   // GET  /api/admin/sessions
   // POST /api/admin/sessions/:id/close
   app.use('/api/admin/sessions', adminRateLimit, adminSessionRoutes);
+
+  // GET /api/admin/analytics
+  app.use('/api/admin/analytics', adminRateLimit, adminAnalyticsRoutes);
+
+  // POST /api/admin/images/upload
+  // POST /api/admin/images/generate
+  app.use('/api/admin/images', adminRateLimit, adminImageRoutes);
+
+  // ---------------------------------------------------------------------------
+  // System routes (platform admin)
+  // ---------------------------------------------------------------------------
+  // POST /api/system/auth/login
+  // POST /api/system/auth/refresh
+  app.use('/api/system/auth', systemRateLimit, systemAuthRoutes);
+
+  // GET   /api/system/stores
+  // GET   /api/system/stores/:id
+  // PATCH /api/system/stores/:id/toggle
+  app.use('/api/system/stores', systemRateLimit, systemStoreRoutes);
+
+  // GET   /api/system/owners
+  // POST  /api/system/owners
+  // PATCH /api/system/owners/:id/toggle
+  app.use('/api/system/owners', systemRateLimit, systemOwnerRoutes);
+
+  // GET /api/system/stats
+  app.use('/api/system/stats', systemRateLimit, systemStatsRoutes);
 
   // Global error handler (must be after routes)
   app.use(errorHandler);

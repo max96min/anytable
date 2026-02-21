@@ -1,22 +1,25 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../ui';
 
 interface NavItem {
   to: string;
   icon: string;
-  label: string;
+  i18nKey: string;
 }
 
 const navItems: NavItem[] = [
-  { to: '/admin/orders', icon: 'receipt_long', label: 'Orders' },
-  { to: '/admin/tables', icon: 'table_restaurant', label: 'Tables' },
-  { to: '/admin/menu', icon: 'menu_book', label: 'Menu' },
-  { to: '/admin/analytics', icon: 'analytics', label: 'Analytics' },
-  { to: '/admin/settings', icon: 'settings', label: 'Admin' },
+  { to: '/admin/orders', icon: 'receipt_long', i18nKey: 'admin.orders' },
+  { to: '/admin/tables', icon: 'table_restaurant', i18nKey: 'admin.tables' },
+  { to: '/admin/menu', icon: 'menu_book', i18nKey: 'admin.menu' },
+  { to: '/admin/analytics', icon: 'analytics', i18nKey: 'admin.analytics' },
+  { to: '/admin/settings', icon: 'settings', i18nKey: 'admin.nav_settings' },
 ];
 
 const AdminBottomNav: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-100 safe-area-pb">
       <div className="flex items-center justify-around h-16">
@@ -33,7 +36,7 @@ const AdminBottomNav: React.FC = () => {
             {({ isActive }) => (
               <>
                 <Icon name={item.icon} size={24} filled={isActive} />
-                <span>{item.label}</span>
+                <span>{t(item.i18nKey)}</span>
               </>
             )}
           </NavLink>

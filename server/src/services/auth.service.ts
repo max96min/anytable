@@ -48,6 +48,10 @@ export async function login(email: string, password: string) {
     throw AppError.unauthorized('Invalid email or password', 'INVALID_CREDENTIALS');
   }
 
+  if (!owner.is_active) {
+    throw AppError.forbidden('Account has been deactivated', 'ACCOUNT_DEACTIVATED');
+  }
+
   const storeId = owner.stores[0]?.id;
   if (!storeId) {
     throw AppError.internal('Owner has no associated store');

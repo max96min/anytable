@@ -3,10 +3,12 @@ import http from 'http';
 import { createApp } from './app.js';
 import { setupSocket } from './socket/index.js';
 import { prisma } from './lib/prisma.js';
+import { ensureUploadDir } from './services/image.service.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 async function main() {
+  await ensureUploadDir();
   const app = createApp();
   const server = http.createServer(app);
 
